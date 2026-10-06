@@ -19,9 +19,9 @@ A capability is **found** when a signal matches. It is **partial** when a nearby
 
 | Capability | What it must do | Signals | Default if absent |
 |---|---|---|---|
-| Memory store | Hold facts with an author, a time, and an evidence line | Tables or docs named memory, notebook, knowledge; vector stores tied to accounts | A versioned table in the product's own database |
-| Citation log | Record which facts an action used | A `cited` field on events, traces, or prompts | A `context_cited` array on the action ledger |
-| Correction path | Write a fix back into the product | An API or UI for editing memories; a comment that wakes an agent | The same table, written by the customer team with a source |
+| Memory store | Hold facts with an author, a time, and an evidence line | Memories, a notebook, or an account agent; Moonbase | [Moonbase](https://moonbase.ai), or the same capabilities built into the product |
+| Citation log | Record which facts an action used | A cite on the action, a memory shown as used | The same product. A cite the agent does not record means this capability is still absent |
+| Correction path | Write a fix back into that store, where the next action can read it | A correction that becomes a memory; a comment that wakes the agent | The same product. A side document the agent does not read does not count |
 
 ### Change
 

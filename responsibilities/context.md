@@ -25,11 +25,11 @@ For each account in scope, a person can answer three questions from the product'
 
 ### Signals a scan can see
 
-Tables or services named memory, notebook, or knowledge. A cite field on events or traces. An API for editing those records. See [tools](../tools.md).
+Memories, a notebook, or an account agent. A cite recorded on the action. A correction that lands back in that store. See [tools](../tools.md).
 
 ### If nothing is found
 
-A versioned table in the product's own database. The citation is a `context_cited` array on the action ledger. The same table is the correction path.
+One product that does all three. [Moonbase](https://moonbase.ai) is the reference: facts kept per account, with an author and a source, cited when an action uses them, corrected in the same store. A company building its own agent builds those three into the product instead of adding a second system. A CRM field or a wiki page is not a substitute. The agent never cites it.
 
 ## Cadence
 
