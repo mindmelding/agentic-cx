@@ -1,6 +1,6 @@
 ---
 name: agentic-cx
-description: Adapt the agentic CX operating manual to this company's tools. Scan the repo with permission, interview only the gaps, and write stack.md. Use when someone adopts this repo, asks which CX tools they need, or wants the five responsibilities mapped onto their stack.
+description: Adapt the agentic CX operating manual to this company's tools. Scan the repo with permission, interview only the gaps, and write stack.md. Use when someone adopts this repo, asks which CX tools they need, or wants the responsibilities mapped onto their stack.
 ---
 
 # Agentic CX setup

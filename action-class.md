@@ -47,3 +47,4 @@ A new class opens when the product can now do a kind of work with its own trigge
 - [Value](responsibilities/value.md) groups ledger rows by class.
 - [Documentation](responsibilities/documentation.md) keeps one spec per class and decides, after the sources change, whether anything public has to move.
 - [Forensics](responsibilities/forensics.md) reconstructs one instance and may demote the class.
+- [Voice](responsibilities/voice.md) turns the same flaw, seen across instances, into one item a person can pass to the builders.

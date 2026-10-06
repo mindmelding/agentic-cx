@@ -49,6 +49,15 @@ A capability is **found** when a signal matches. It is **partial** when a nearby
 | Assertion check | Fail when production disagrees with a declared boundary | A CI job that reads the ledger or traces | A script in CI. Exit 1 on a broken `never` |
 | Doc decision | Record whether a change stays a spec, stays a page, becomes a guide, or comes down | A review on the pull request, a label, a small table of dispositions | The pull request itself, until the decision has a rung and a log |
 
+### Voice
+
+| Capability | What it must do | Signals | Default if absent |
+|---|---|---|---|
+| Intake | Read new mail, resolutions, and CX findings since a cursor | A mailbox, a help desk, Moonbase or another account stream | The mailbox the team already answers, read from a saved cursor |
+| Cluster | Turn repeat reports into one item with a count | A dedupe key, a label, a human merging threads | The queue itself. Same flaw, one row |
+| Triage queue | Hold each item until a person marks pass or hold | A list, a board column, a local file | A local queue, gitignored, next to `stack.md` |
+| Issue adapter | File the digest into the tracker product work already uses | Linear, Jira, GitHub issues | [Linear](https://linear.app). Use GitHub or Jira instead when that is where issues already live |
+
 ### Forensics
 
 | Capability | What it must do | Signals | Default if absent |

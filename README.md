@@ -2,7 +2,7 @@
 
 An operating manual for customer experience at a company whose product does work on a customer's behalf. Written to be adopted by a new company as it stands, and adapted to the tools that company already runs.
 
-The five responsibilities are the job. This page is the position they sit on. A skill in [`skill/SKILL.md`](skill/SKILL.md) interviews a repo, with permission to scan, and maps the tools in [`tools.md`](tools.md) onto whatever it finds.
+The responsibilities below are the job. This page is the position they sit on. A skill in [`skill/SKILL.md`](skill/SKILL.md) interviews a repo, with permission to scan, and maps the tools in [`tools.md`](tools.md) onto whatever it finds.
 
 ## The shift
 
@@ -34,6 +34,7 @@ Each page uses the same headings: mandate, delivered when, the loop, tools, cade
 | 3 | [Value](responsibilities/value.md) | Renewal and expansion cite transformed work from the ledger. |
 | 4 | [Documentation](responsibilities/documentation.md) | The public promise matches production, and pages shrink as the product learns to say the rest. |
 | 5 | [Forensics](responsibilities/forensics.md) | A harmful action has a severity, an owner, and a cause in under two minutes. |
+| 6 | [Voice](responsibilities/voice.md) | A product flaw has been passed to the builders, or held, and the issue was already written in their tracker's shape. |
 
 Tools are named as capabilities in [`tools.md`](tools.md). The skill fills a local `stack.md` with the products this company actually uses, and recommends a default only where a capability is missing.
 
@@ -41,7 +42,7 @@ Tools are named as capabilities in [`tools.md`](tools.md). The skill fills a loc
 
 The detail lives on each responsibility page. Across the team:
 
-- **Daily.** Clear the moment queue. Read what the system did that a person has to be the one to handle.
+- **Daily.** Clear the moment queue, and the voice queue. Pass or hold each new flaw. Read what the system did that a person has to be the one to handle.
 - **Weekly.** Check declared boundaries against last week's actions. Retire one page the product can now say itself.
 - **Quarterly.** Review the rung profile. Attach the value story to the ledger. Propose the next promotions.
 
