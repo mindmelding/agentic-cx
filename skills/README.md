@@ -1,16 +1,14 @@
 # Skills
 
-Four skills run the manual. They are plain Markdown. Any agent can follow one by reading its `SKILL.md`. Nothing here depends on a particular harness.
+Four skills. Plain Markdown. Any agent follows one by reading its `SKILL.md`.
 
-Point the agent at one file. Do not load all four unless a routine says so.
-
-| Skill | When | Stops when |
+| When | Skill | Stops when |
 |---|---|---|
-| [intake](intake/SKILL.md) | New mail, a resolution, or a flaw from the day's work | Facts and flaws are written down. Nothing is filed. |
-| [triage](triage/SKILL.md) | After intake, or when a commit flags a spec | Each item is passed, held, or sent back to context. |
-| [learn](learn/SKILL.md) | A decision a new teammate would not guess | One file exists under [learnings](../learnings/README.md) and the index has a row. |
-| [check](check/SKILL.md) | Once a week | A list of at most five things. Then stop. |
+| Start of day | [Open](open/SKILL.md) | The board is posted. Nothing is filed. |
+| During the day | [Floor](floor/SKILL.md) | One customer moment is handled, and any fact or flaw from it is written down. |
+| During the day | [Triage](triage/SKILL.md) | The waiting item is passed, held, or given a doc disposition. |
+| End of day | [Close](close/SKILL.md) | The day note exists. Friday's close has promoted or discarded the week. |
 
-The schedule is [routines](../routines.md). The first-time setup, which maps tools, stays at [skill/SKILL.md](../skill/SKILL.md).
+The schedule is [routines](../routines.md). Setup, once, is [skill/SKILL.md](../skill/SKILL.md).
 
-Learnings live in the repo as files, not in the agent's memory. Copy the `learnings/` folder and these skills onto another machine, or another harness, and the record comes with them.
+[Front of House](https://github.com/scmancillas/front-of-house) is the canon the floor skill loads: mindset, one moment playbook, read the file before the reply. Lessons from those moments do not go back into that public canon. They go into `local/learnings/`, which is gitignored here and is what you copy when you change agents. The shape of a learning is in [learnings](../learnings/README.md).

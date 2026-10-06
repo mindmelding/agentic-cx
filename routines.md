@@ -1,32 +1,26 @@
 # Routines
 
-Four skills. Two sittings. Learnings are files in [`learnings/`](learnings/README.md).
+Four skills. The floor canon is [front-of-house](https://github.com/scmancillas/front-of-house). This repo does not copy it. Front of House is how a moment is handled. These skills are when, and what is kept.
 
-## Every morning
+Company notes stay in `local/`. Copy that folder to move them to another machine or another agent. The public manual stays free of one company's customers.
 
-About twenty minutes.
+## Start of day
 
-1. [Intake](skills/intake/SKILL.md). What is new since yesterday.
-2. [Triage](skills/triage/SKILL.md). Pass, hold, or no page. Stop when the new rows are decided.
+About twenty minutes. [Open](skills/open/SKILL.md).
 
-Skip triage if intake found nothing.
+What is new, what is still open, and whether the first move is a customer or a decision. Nothing is filed.
 
-## The moment a decision is non-obvious
+## Throughout the day
 
-Before leaving it.
+Two skills. Use the one that matches the moment. Do not run both by habit.
 
-[Learn](skills/learn/SKILL.md). One file. A new person, or a different agent, can read it later without this chat.
+- [Floor](skills/floor/SKILL.md) when a customer is in front of you. One moment. Read their file. Reply. If the moment revealed a fact or a flaw, write it down before you leave the thread.
+- [Triage](skills/triage/SKILL.md) when a decision is waiting. Pass or hold. No page, a promise line, or a guide. File only after a yes.
 
-Run it when a pass, a hold, a `never` line, or a "no documentation" call would surprise someone who was not in the room.
+## End of day
 
-## Once a week
+About fifteen minutes. [Close](skills/close/SKILL.md).
 
-About thirty minutes. Friday is fine.
+The day note: what landed, what missed, a new situation, a phrase, a delight, and what is still open. A decision that would surprise a teammate becomes a learning file the same night.
 
-1. [Check](skills/check/SKILL.md). At most five items.
-2. Triage any of the five that are decisions.
-3. Learn the one thing the check changed, if it changed anything.
-
-## Once, when adopting this
-
-[Setup](skill/SKILL.md). It writes `stack.md` and does not need to run again until the tools change.
+On Friday, close also promotes or discards the week's notes. At most five. That is the whole weekly review.

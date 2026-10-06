@@ -1,12 +1,22 @@
 # Learnings
 
-This folder is the memory. It is Markdown files in the repo. Any agent, in any harness, can read them by opening the files. Nothing in here requires a vendor memory, a vector store, or a chat transcript.
+Two layers.
 
-A learning is one decision worth keeping. The [learn](../skills/learn/SKILL.md) skill writes them. A person can write the same file by hand.
+**The shape is in this folder.** It is committed, company-agnostic, and enough for any agent to write a valid learning without loading a skill.
 
-## One file
+**The record is in `local/learnings/`.** It is gitignored. It holds the day notes and the promoted decisions for one company. Copy `local/` onto another machine, or point another harness at it. Do not commit it. Customer words do not belong in the public manual.
 
-`learnings/YYYY-MM-DD-short-slug.md`
+This is the same split as [front-of-house](https://github.com/scmancillas/front-of-house): the canon is shared, and what a house learns stays in its overlay. Here the overlay is `local/learnings/`. Close writes it. Floor appends a line during the day when a phrase or a miss should not wait until evening.
+
+## A day note
+
+`local/learnings/days/YYYY-MM-DD.md`
+
+Sections, each allowed to be empty: Landed, Missed, New situation, Phrase, Delight. Then what is still open tomorrow.
+
+## A learning
+
+`local/learnings/YYYY-MM-DD-short-slug.md`
 
 ```yaml
 ---
@@ -19,12 +29,4 @@ evidence: path, link, or quote
 ---
 ```
 
-Prose under the frontmatter is optional. If the decision is not clear from `decision` and `evidence`, the file is not done.
-
-## The index
-
-[`index.md`](index.md) lists every learning, newest first. Agents should read the index before the files, and open a file only when the row is the one they need.
-
-## Taking them somewhere else
-
-Copy this folder. The skills in [`../skills`](../skills/README.md) know the shape. A harness that never sees those skills can still follow this page.
+[`index.md`](index.md) in this folder is the empty template. The live index is `local/learnings/index.md`, newest first. Agents read that index before opening a file.

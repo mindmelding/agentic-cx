@@ -1,6 +1,6 @@
 ---
 name: cx-triage
-description: Decide pass or hold on each voice item, and no-page, promise-line, or guide on a flagged spec. File only after an explicit yes. Use after intake, or when a commit has marked a spec unverified.
+description: During the day, decide pass or hold on a voice item, and no-page, promise-line, or guide on a flagged spec. File only after an explicit yes. Use when open or floor has left a decision waiting, not as a morning scan.
 ---
 
 # Triage
@@ -29,4 +29,4 @@ When a spec is unverified because a commit touched its `sources`:
 
 ## Then
 
-If the decision would surprise someone who was not here, say so and tell them to run the learn skill before stopping.
+If the decision would surprise someone who was not here, append one line to today's day note (`local/learnings/days/`) and say that close should promote it. If this is the last thing you will do today, write the learning file now, in the shape [close](../close/SKILL.md) uses.
