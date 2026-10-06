@@ -4,7 +4,7 @@ A delegated action is one thing the product did, or declined to do, for a named 
 
 ## What a class is
 
-A class is one capability a customer can delegate, named so that many instances share a single contract. `post_meeting_follow_up` is a class. The draft written after Tuesday's call with one account is an instance of it.
+A class is one capability a customer can delegate, named so that many instances share a single contract. A sales-coaching product that writes a private note after each recorded call has a class, `post_call_debrief`. The note for Maya's call with Acme on Tuesday is an instance of it.
 
 Every class carries:
 
@@ -19,26 +19,26 @@ Every class carries:
 | Sources | The code paths that implement it. A change here marks the spec unverified. |
 
 ```yaml
-class: post_meeting_follow_up
-fires_when: a meeting with an account contact ends and something was agreed
+class: post_call_debrief
+fires_when: a recorded sales call finishes and the recording is available
 may:
-  - draft a follow-up for the attendee to send
-  - set a dated reminder
+  - post a private note to the rep who was on the call
+  - include a follow-up draft the rep can copy
 never:
-  - send without an explicit yes
-  - state a price
-  - name another customer as a reference
-approval: human, per instance, while the rung is draft
+  - message the buyer
+  - invent a discount
+  - put the note anywhere the buyer can read it
+approval: the rep, before any follow-up is sent
 default_rung: 1
 sources:
-  - src/skills/follow-up.ts
+  - src/coaching/debrief.ts
 ```
 
 ## What stays the same kind
 
-A feature is usually a change inside a class that already exists. A better reminder, a new field on the draft, a faster model: same class, same spec, sources touched, spec re-checked.
+A feature is usually a change inside a class that already exists. A tighter critique, a different tone, a faster model: same class, same spec, sources touched, spec re-checked.
 
-A new class is rare. Open one when the product can now do a kind of work that has its own trigger, its own boundary, and its own rung. "Follow up after a meeting" and "brief a renewal" are two classes. Two wordings of the follow-up are one.
+A new class opens when the product can now do a kind of work with its own trigger, its own boundary, and its own rung. Practicing a call before it happens and debriefing a call after it happened are two classes. Two wordings of the debrief are one.
 
 ## What other pages mean by it
 

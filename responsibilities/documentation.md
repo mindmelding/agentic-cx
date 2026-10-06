@@ -20,18 +20,22 @@ A class is defined in [action-class.md](../action-class.md). Documentation keeps
 
 ### Example
 
-The class is `post_meeting_follow_up`. Its spec says it may draft a follow-up and set a reminder, and it will never send on its own, state a price, or name another customer. `sources` lists `src/skills/follow-up.ts`. The public record is a witness line ("it never states a price") and a short guide ("how a follow-up gets sent") because a person still has to send the draft.
+A company sells an AI coach to sales teams. Reps already use it to rehearse a call. The release this week is new: when a recorded call ends, the coach posts a private note to the rep. Two things that worked, one thing to try next time, and a follow-up draft the rep can copy. The code lands in `src/coaching/debrief.ts`.
 
-A commit edits `src/skills/follow-up.ts` so the draft can pull a number from the opportunity. The path is in `sources`, so the spec flips to unverified the moment the commit lands. The check proposes a decision:
+The morning of the release, one person decides what has to be written down. They use the class [`post_call_debrief`](../action-class.md).
 
-| Proposal | Meaning |
-|---|---|
-| Keep the boundary | The new code contradicts `never: state a price`. The code is the thing to fix. The witness line stays. |
-| Update the boundary | Stating a price from the opportunity is now intended. The spec and the witness line change together. |
-| Leave the guide | A person still sends the draft, so the sequence stays a guide. |
-| Retire the guide | The product now sends the follow-up and says what it did. The guide becomes a product issue, then comes down. |
+**The note explains itself.** A rep who just received one does not need an article called "About debriefs." The first note carries the explanation: "This is your debrief for the Acme call. I write one after every recorded call. Only you can see it." That sentence is product, so no page gets opened.
 
-At the start, a person picks the row. The proposal is the draft. Applying it waits for them. After the same kind of proposal has been accepted enough times, unchanged, it can move up a rung of its own.
+**The promise is a line, not a guide.** "It will never message the buyer, and it will never invent a discount." The coach saying that inside the note is weak, because a coach that is wrong says the same sentence. Those two lines go on the existing public page of what the product will never do. One page gains two lines. No new page.
+
+**A guide exists only for the steps before a coach can speak.** If an admin still has to create a key in the call recorder, paste it, and choose which team, that sequence is a short guide. There is no debrief to ask until those steps are done. If the product already walks that connection on an empty screen, the guide is not written.
+
+**The spec is the part that stays tied to the code.** It lists `src/coaching/debrief.ts` under `sources`. Two weeks later someone edits that file so the note can quote a discount already saved on the deal. The commit touches a listed path, so the spec is unverified before anyone asks. The same person decides:
+
+- Quoting a discount the company already approved is now intended. The `never` line changes from "never mention a discount" to "never invent a discount," and the public promise changes with it.
+- The debrief article is still not written. The note can say, in that one instance, "I included the 10% already on this opportunity."
+
+The first releases work this way with a person on every decision. After several releases where the accepted call was "the first message explains itself, and only the promise page moves," the check may draft that proposal and wait for a yes. Adding or removing a line on the promise page stays with a person.
 
 ### What the decision can be
 
