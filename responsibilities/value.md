@@ -10,7 +10,7 @@ A renewal or expansion conversation cites specific actions: what ran, how often 
 
 ## The loop
 
-1. Every delegated action lands in the ledger, including the ones a person ignored or reversed.
+1. Every delegated action lands in the ledger, including the ones a person ignored or reversed. Rows of the same kind share an [action class](../action-class.md).
 2. Through the term, tag a value story to the rows that support it. The story names the workflow that changed.
 3. At renewal, the review is those stories plus the rung profile. Seat charts stay out of the deck.
 4. Expansion is the next capability that is ready to climb, or the next group ready to start at draft.

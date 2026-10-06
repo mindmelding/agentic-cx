@@ -2,7 +2,7 @@
 
 ## Mandate
 
-When the system does harm, or might have, this team can say what happened, how far it reached, and what changes before it runs again.
+When the system does harm, or might have, this team can say what happened, how far it reached, and what changes before that [action class](../action-class.md) runs again.
 
 ## Delivered when
 

@@ -43,9 +43,11 @@ A capability is **found** when a signal matches. It is **partial** when a nearby
 
 | Capability | What it must do | Signals | Default if absent |
 |---|---|---|---|
-| Spec register | One file per action class in version control | `docs/`, `specs/`, skill files, `llms.txt` | Markdown or YAML in the repo, one file per class |
+| Spec register | One file per [action class](action-class.md), each naming its source paths | `docs/`, `specs/`, skill files, `llms.txt` | Markdown or YAML in the repo, one file per class, with `sources` |
 | Renderer | A site generated from that register | Mintlify, Starlight, Fumadocs, Docusaurus, Sphinx, a custom docs build | [Fumadocs](https://www.fumadocs.dev) or [Starlight](https://starlight.astro.build) |
+| Affected-path check | Mark a spec unverified when a commit touches its sources | A CI job that diffs paths against `sources` | A script on the pull request. The spec cannot read as current while unverified |
 | Assertion check | Fail when production disagrees with a declared boundary | A CI job that reads the ledger or traces | A script in CI. Exit 1 on a broken `never` |
+| Doc decision | Record whether a change stays a spec, stays a page, becomes a guide, or comes down | A review on the pull request, a label, a small table of dispositions | The pull request itself, until the decision has a rung and a log |
 
 ### Forensics
 

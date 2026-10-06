@@ -2,7 +2,7 @@
 
 ## Mandate
 
-Move a named group from doing the work themselves to delegating it, one capability at a time, on evidence.
+Move a named group from doing the work themselves to delegating it, one [action class](../action-class.md) at a time, on evidence.
 
 ## Delivered when
 

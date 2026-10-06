@@ -8,7 +8,7 @@ The five responsibilities are the job. This page is the position they sit on. A 
 
 Conventional customer-success metrics count a person operating software: logins, seats, time in the product, feature adoption. In a product the customer delegates to, successful use drives that time down. A scorecard built on sessions will call a healthy account quiet and a struggling account engaged.
 
-The unit that replaces the session is a **delegated action**: the system did something, or declined to, for a named person, using specific context, and a human accepted it, edited it, ignored it, or reversed it.
+The unit that replaces the session is a **delegated action**: the system did something, or declined to, for a named person, using specific context, and a human accepted it, edited it, ignored it, or reversed it. Actions of the same kind belong to one [action class](action-class.md). The spec, the rung, and the doc decision all attach to the class. The ledger stores the instances.
 
 Two uses of AI stay separate:
 
@@ -47,7 +47,7 @@ The detail lives on each responsibility page. Across the team:
 
 ## A two-week start
 
-Pick one action class.
+Pick one [action class](action-class.md).
 
 1. Write its boundary: what it may do, what it will never do, who approves.
 2. Record every instance, the context it cited, and how a human disposed of it.
