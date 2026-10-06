@@ -2,7 +2,9 @@
 
 An operating manual for customer experience at a company whose product does work on a customer's behalf. Written to be adopted by a new company as it stands, and adapted to the tools that company already runs.
 
-The responsibilities below are the job. This page is the position they sit on. A skill in [`skill/SKILL.md`](skill/SKILL.md) interviews a repo, with permission to scan, and maps the tools in [`tools.md`](tools.md) onto whatever it finds.
+The responsibilities below are the job. This page is the position they sit on. Day to day is four skills and a folder of learnings, so the record is not trapped in one harness. The schedule is [`routines.md`](routines.md). The skills are in [`skills/`](skills/README.md). Learnings are in [`learnings/`](learnings/README.md).
+
+A setup skill in [`skill/SKILL.md`](skill/SKILL.md) interviews a repo, with permission to scan, and maps the tools in [`tools.md`](tools.md) onto whatever it finds. It runs once.
 
 ## The shift
 
