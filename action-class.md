@@ -4,7 +4,7 @@ A delegated action is one thing the product did, or declined to do, for a named 
 
 ## What a class is
 
-A class is one capability a customer can delegate, named so that many instances share a single contract. A sales-coaching product that writes a private note after each recorded call has a class, `post_call_debrief`. The note for Maya's call with Acme on Tuesday is an instance of it.
+A class is one capability a customer can delegate, named so that many instances share a single contract. A product-analytics agent that answers questions about user behavior has a class, `answer_behavior_question`. Priya asking "what changed in activation this week?" on Thursday is an instance of it.
 
 Every class carries:
 
@@ -19,26 +19,26 @@ Every class carries:
 | Sources | The code paths that implement it. A change here marks the spec unverified. |
 
 ```yaml
-class: post_call_debrief
-fires_when: a recorded sales call finishes and the recording is available
+class: answer_behavior_question
+fires_when: someone on the team asks how people are using their product
 may:
-  - post a private note to the rep who was on the call
-  - include a follow-up draft the rep can copy
+  - answer from that company's own events
+  - name the group of users that accounts for a change
 never:
-  - message the buyer
-  - invent a discount
-  - put the note anywhere the buyer can read it
-approval: the rep, before any follow-up is sent
-default_rung: 1
+  - invent a number that is not in the events
+  - show one customer's users to another customer
+approval: none for a read. The answer is the action
+default_rung: 3
 sources:
-  - src/coaching/debrief.ts
+  - src/analytics/answer.ts
+  - src/analytics/what-changed.ts
 ```
 
 ## What stays the same kind
 
-A feature is usually a change inside a class that already exists. A tighter critique, a different tone, a faster model: same class, same spec, sources touched, spec re-checked.
+A feature is usually a change inside a class that already exists. Naming which group moved, instead of only returning a total, is the same class. The sources change, and the spec is re-checked. The [documentation example](responsibilities/documentation.md) is this case: the update is flagged, and the decision is that no page is needed, because the answer itself reveals the new behavior.
 
-A new class opens when the product can now do a kind of work with its own trigger, its own boundary, and its own rung. Practicing a call before it happens and debriefing a call after it happened are two classes. Two wordings of the debrief are one.
+A new class opens when the product can now do a kind of work with its own trigger, its own boundary, and its own rung. Answering a question and warning a team that activation fell, without being asked, are two classes. Two ways of explaining the same change are one.
 
 ## What other pages mean by it
 

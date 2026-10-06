@@ -20,22 +20,21 @@ A class is defined in [action-class.md](../action-class.md). Documentation keeps
 
 ### Example
 
-A company sells an AI coach to sales teams. Reps already use it to rehearse a call. The release this week is new: when a recorded call ends, the coach posts a private note to the rep. Two things that worked, one thing to try next time, and a follow-up draft the rep can copy. The code lands in `src/coaching/debrief.ts`.
+A B2B company sells an agent that product teams use to ask about user behavior. Someone types "what changed in activation this week?" and the agent answers from that company's events. The class is [`answer_behavior_question`](../action-class.md). It may answer from their events and name the group that moved. It may never invent a number, and it may never show one customer's users to another. `sources` lists `src/analytics/answer.ts` and `src/analytics/what-changed.ts`.
 
-The morning of the release, one person decides what has to be written down. They use the class [`post_call_debrief`](../action-class.md).
+The release is a change inside that class. Until now the agent returned a total: "Activation fell 12%." The new code in `what-changed.ts` makes it name the group: new accounts invited fewer teammates, returning accounts held steady.
 
-**The note explains itself.** A rep who just received one does not need an article called "About debriefs." The first note carries the explanation: "This is your debrief for the Acme call. I write one after every recorded call. Only you can see it." That sentence is product, so no page gets opened.
+The commit touches a path on the spec, so the spec is flagged unverified before anyone writes a page. A person looks at the diff and records the decision: **no documentation.**
 
-**The promise is a line, not a guide.** "It will never message the buyer, and it will never invent a discount." The coach saying that inside the note is weak, because a coach that is wrong says the same sentence. Those two lines go on the existing public page of what the product will never do. One page gains two lines. No new page.
+The behavior shows up in the answer the next time someone asks.
 
-**A guide exists only for the steps before a coach can speak.** If an admin still has to create a key in the call recorder, paste it, and choose which team, that sequence is a short guide. There is no debrief to ask until those steps are done. If the product already walks that connection on an empty screen, the guide is not written.
+> Activation fell 12% this week. New accounts invited fewer teammates. Returning accounts held steady. I can list the accounts if you want them.
 
-**The spec is the part that stays tied to the code.** It lists `src/coaching/debrief.ts` under `sources`. Two weeks later someone edits that file so the note can quote a discount already saved on the deal. The commit touches a listed path, so the spec is unverified before anyone asks. The same person decides:
+A guide called "How to ask what changed" would teach a prompt for a question the agent should just answer. The article would exist because the answer stayed a bare number. That is a product bug. The fix is the sentence in the answer, and the flagged spec is closed as "no page."
 
-- Quoting a discount the company already approved is now intended. The `never` line changes from "never mention a discount" to "never invent a discount," and the public promise changes with it.
-- The debrief article is still not written. The note can say, in that one instance, "I included the 10% already on this opportunity."
+The promise page does not move either. The agent still never invents a number and still never crosses a customer boundary. Nothing on the public promise changed, so nothing is added there.
 
-The first releases work this way with a person on every decision. After several releases where the accepted call was "the first message explains itself, and only the promise page moves," the check may draft that proposal and wait for a yes. Adding or removing a line on the promise page stays with a person.
+The first times a change like this ships, a person confirms "no documentation." After that call has been accepted without edits on several releases that do not touch a `never` line, the check can propose it and wait for a yes. A change that would add or remove a promise line still stops for a person.
 
 ### What the decision can be
 
