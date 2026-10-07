@@ -33,6 +33,8 @@ Postgres, with the columns below. The renewal date is the one already in the CRM
 
 Suggested columns: id, time, build, account, actor, action class, moment, rung, held by (`agent` or `person`), context cited, payload, boundary checks, disposition (`accepted`, `edited`, `ignored`, `reversed`, `blocked`), disposed by, edit diff, later outcome, harm.
 
+If product has not built it, the [ledger](../ledger.md#when-there-is-no-ledger) page says how to run this loop from reconstructed, observed, or sampled rows, and how to label a story that rests on them.
+
 `moment` is the playbook slug from [`floor/moments`](../floor/moments/README.md) when a person was on the other end. It is empty when the product acted and no reply was owed.
 
 ## Cadence

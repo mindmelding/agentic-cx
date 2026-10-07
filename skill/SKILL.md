@@ -89,6 +89,8 @@ Score all seven, plus the floor:
 | [Voice](../responsibilities/voice.md) | Each flaw one item with a count, passed or held daily. |
 | [Floor](../floor/README.md) | Moments split between agent and people. People's time goes to the moments a person holds. |
 
+Record the [ledger level](../ledger.md#when-there-is-no-ledger), 0 to 4. Most scores above 2 depend on it.
+
 Also note, for each, whether CX or product holds it today, and whether that matches [`../boundary.md`](../boundary.md). A mismatch is a finding, not a fault.
 
 ## 5. Write
@@ -107,7 +109,7 @@ Also note, for each, whether CX or product holds it today, and whether that matc
 ```markdown
 # Assessment, YYYY-MM-DD
 
-Operator: <name, title>. Team: <n>. Answers customers today: <agent | people | both>.
+Operator: <name, title>. Team: <n>. Answers customers today: <agent | people | both>. Ledger level: <0-4>.
 
 | Area | Level | Evidence | Holder | Gap | Next step |
 |---|---|---|---|---|---|

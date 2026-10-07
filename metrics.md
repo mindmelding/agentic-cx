@@ -1,6 +1,6 @@
 # Metrics
 
-The scorecard for a customer team whose product does the work. Every number here is a query over the ledger, the memory store, or the floor's own record. A number that needs a survey or a seat count to compute is either lagging or on the list of things not to report.
+The scorecard for a customer team whose product does the work. Every number here is a query over the [ledger](ledger.md), the memory store, or the floor's own record. Without a ledger, report each number with the level it came from. A number that needs a survey or a seat count to compute is either lagging or on the list of things not to report.
 
 ## Why the old scorecard breaks
 
