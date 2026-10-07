@@ -5,7 +5,7 @@ This is a canon of opinions, not a wiki. Contributions that make it sharper are 
 ## What gets merged
 
 - **A principle** with a why, a when-it-doesn't-apply, and a good/bad pair. One opinion per file.
-- **A playbook** (`moments/<slug>/PLAYBOOK.md`) in the existing shape, with at least two eval cases.
+- **A playbook** (`moments/<slug>/PLAYBOOK.md`) in the existing shape. Add an eval case only if it tests behavior the fifteen in `floor/evals/cases/` do not.
 - **An exemplar** with a "why it works." Anonymized or synthetic. No real customer data, ever.
 - **A failure case** in `failures/`, in the shape its README gives, with a reputable source.
 - **An eval case** that catches a real failure you saw.

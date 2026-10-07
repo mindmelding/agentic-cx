@@ -12,6 +12,8 @@ Dated lessons. Every promotion from the inbox lands here. This is also the publi
 - Examples: the hall of fame is retired. The hall of shame moved to `failures/support-replies.md` at the repo root, beside agent-product failures.
 - Onboarding and retention moved into the onboarding and value responsibility pages. The First Shift moved into step 7 of the setup skill.
 - MINDSET rewritten for a person and the agent together.
+- Evals cut from 32 cases to 15: reading the file, unwritten policy, disclosure, money with and without a grant, personal data, security handoff, a bad day, anger, silence, our mistake, an onboarding stall, a bug, a declining renewal, and prepared-not-done. Original numbers kept.
+- The bibliography became a thirteen-line reading list.
 
 ## 2026-09-15
 
