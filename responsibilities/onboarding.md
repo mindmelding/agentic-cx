@@ -33,6 +33,20 @@ That moves the work in three ways:
 6. **Graduate.** The account leaves onboarding when it reaches the stated outcome, or when one class has a record strong enough to propose the next rung. Then it belongs to [change](change.md).
 7. **Fix the path.** A stall that repeats across accounts is a flaw in the path. It goes to [voice](voice.md) if product has to change the flow, or to the first-run script if this team can.
 
+## The outcome, in their words
+
+Ask once, on day 0: "What do you want to be true in thirty days that isn't true now?" "The Wednesday report goes out without me touching it" is an outcome. "Get set up" is not. If the answer is vague, ask what they would show their boss. Write it down verbatim with a target date. Every later step is measured against it, and a customer who reaches it without anyone knowing what it was reached it by accident.
+
+What shortens the road to it: do the first step for them before they log in, one next action per message, the first question answered within the hour, and the milestone named when they hit it, so they know it counted. Remove every step that exists for our convenience.
+
+Check-ins do a piece of the work or are not sent. Day 7: "Data source connected, first run went through, 1,204 rows. It's scheduled for Wednesday 7am your time. I'll check it lands." Day 30: "Four Wednesdays, four reports, zero touches. Anything you'd change?"
+
+## A sales-led kickoff
+
+Some accounts were promised a person. The kickoff is a meeting with one purpose, named in the invite: "Agree what done looks like by October 14, and who does what." Invite the people who own the outcome, and say why each is there. Open by reading back the desired outcome and asking whether it is still right, and what would make it a failure. Touch the product only after that, and only the part that serves the goal. Close with every open item read aloud with a name and a date. Send the same list within the hour.
+
+The agent prepares the file and drafts the follow-up. The person runs the room.
+
 ## Who holds what
 
 | Part | Holder |
@@ -41,7 +55,7 @@ That moves the work in three ways:
 | What the agent asks first, and the context floor per class | This team writes them, as part of the class spec. |
 | The stall signals and the stall list | This team defines them. The list is a view on the ledger. |
 | The human step-in | A person on the floor. |
-| Sales-led kickoffs | A person, using [`floor/onboarding/kickoff.md`](../floor/onboarding/kickoff.md). The agent prepares the file. |
+| Sales-led kickoffs | A person, as below. The agent prepares the file. |
 
 The line is drawn in full in [boundary](../boundary.md).
 

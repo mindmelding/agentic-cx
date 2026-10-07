@@ -2,7 +2,7 @@
 
 Public cases where an agent product took a harmful or wrong action for a customer. Each one is read the way [forensics](../responsibilities/forensics.md) would read it: the action class, the boundary that should have held, the rung it was on, the severity by reach, and what the customer needed to hear.
 
-Support chatbots that said something wrong are in [`floor/examples/hall-of-shame/`](../floor/examples/hall-of-shame/). This folder is for products that **did** something.
+This folder is mostly for products that **did** something. Support replies that did the harm with words (an invented policy, an unauthorized offer, a template that answered nothing) are in [support replies](support-replies.md).
 
 | Case | When | What the agent did | Severity by reach | Lesson |
 |---|---|---|---|---|

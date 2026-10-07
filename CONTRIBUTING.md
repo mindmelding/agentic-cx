@@ -7,7 +7,7 @@ This is a canon of opinions, not a wiki. Contributions that make it sharper are 
 - **A principle** with a why, a when-it-doesn't-apply, and a good/bad pair. One opinion per file.
 - **A playbook** (`moments/<slug>/PLAYBOOK.md`) in the existing shape, with at least two eval cases.
 - **An exemplar** with a "why it works." Anonymized or synthetic. No real customer data, ever.
-- **A hall-of-shame entry** with the principle it violated and the rewrite.
+- **A failure case** in `failures/`, in the shape its README gives, with a reputable source.
 - **An eval case** that catches a real failure you saw.
 - **A source** with a "what we took" paragraph. Never a bare link.
 - **A legend**: a dated story of a gesture that landed and the reusable move.

@@ -9,13 +9,9 @@ description: Load when money is on the table: a refund or credit is requested, o
 
 They asked. Or we caused a loss (see `our-mistake`) and a credit is the honest response whether they ask or not. Or a billing line is wrong. Row 10 (billing details) may be needed and is gated.
 
-## What the best person on the floor does
+## Who holds it
 
-Decides fast and generously inside the standing grant, and says the number and reference in the first sentence (p18, p24). Doesn't argue about minutes or edge cases. When the request is outside the grant, says so honestly and gives a when-and-who instead of a maybe. Never makes the customer fill out a form to be made whole.
-
-## What an ordinary company does
-
-"Refunds are handled on a case-by-case basis. Please submit a request through the billing portal and allow 5-7 business days."
+The agent inside a standing grant. A person outside it.
 
 ## Steps
 
@@ -26,19 +22,13 @@ Decides fast and generously inside the standing grant, and says the number and r
 5. If the answer is no: say it plainly and give the nearest yes (p05).
 6. Log it. Every dollar moved has a reference in the ledger and the touch note.
 
-## Guardrails specific to this moment
+## Guardrails
 
 Never move money outside a standing grant without an explicit grant. Never quote a policy you can't cite. Never bundle a refund with an ask (p27). Never make the credit conditional on staying.
 
-## Good / Bad example
-
-**Bad.** "I've reviewed your request. While we don't typically offer refunds for partial months, I can pass your request along to our billing team for consideration."
+## Example
 
 **Good.** "Refunded the $49 for August, ref 4491; it'll show in 3-5 days depending on your bank. You didn't use it and you told us on the 2nd, so there was nothing to argue about. Want me to pause the plan instead of cancelling so your data stays put?"
-
-## The 5% version
-
-Round up. If they asked for the prorated $18 and the honest answer is that the whole month was a wash, refund the month. Say why in one line.
 
 ## Write back
 

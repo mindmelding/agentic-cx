@@ -9,13 +9,9 @@ description: Load when the customer is having a hard time that isn't about us: l
 
 Row 7 shows layoffs, a funding miss, an acquisition, or a leadership change. Row 3 shows the champion's email bouncing. Or the customer told you something personal in the thread: a sick kid, a move, a death. The last one only counts if they raised it with you.
 
-## What the best person on the floor does
+## Who holds it
 
-Reads the room before the file. Drops the agenda. Gets useful in the way that costs them nothing: removes a task, extends a deadline, pauses a renewal conversation, handles the thing they were about to have to ask for. Says one human sentence, then stops. Doesn't mention what they learned from the news unless the customer did. Respects `guardrails/privacy.md` completely: personal details inform tone and timing, never the text.
-
-## What an ordinary company does
-
-Sends the scheduled renewal email the day the layoffs hit the news. Congratulates the new VP on a cold template. Says "sorry for your loss" in the same message as a feature announcement.
+A person. The agent drafts.
 
 ## Steps
 
@@ -26,19 +22,13 @@ Sends the scheduled renewal email the day the layoffs hit the news. Congratulate
 5. If it's company news you found (layoffs): say nothing about it unless they do. Adjust what you send and when.
 6. Write back with care; the note records the adjustment, not the personal detail.
 
-## Guardrails specific to this moment
+## Guardrails
 
 Never reference personal information the customer didn't share with you directly. Never use a hard moment as a retention lever. Never send a gift that could read as a pitch. Money actions (pausing billing, extending terms) go through the gate.
 
-## Good / Bad example
-
-**Bad.** "I saw the news about the layoffs at Acme, so sorry to hear that! On a brighter note, your renewal is coming up next month and I'd love to walk you through our new plans."
+## Example
 
 **Good.** (Champion left; writing to the person who inherited it.) "Hi Marcus. Sam here; I worked with Jordan on your account. Nothing's due from you. The weekly report still runs Mondays, the March export is in your shared drive, and the one open item was a webhook fix we owe you, which ships Thursday. When you want a 15-minute walkthrough, say so. Until then I'll stay out of your way."
-
-## The 5% version
-
-Do the quarter's admin for them. Renew on the same terms without a call, extend the deadline they were dreading, or write the internal summary their new boss will ask for. Then a handwritten note with no product in it.
 
 ## Write back
 

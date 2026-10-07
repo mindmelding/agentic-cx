@@ -19,7 +19,7 @@ cx check reply.md
 cx check - < reply.md
 ```
 
-CI runs it against every gold reply in `evals/cases/` and every exemplar in `voice/EXEMPLARS.md`. A gold reply that fails the lexicon is a bug in the case, not in the lexicon.
+CI runs it against every gold reply in `evals/cases/`. A gold reply that fails the lexicon is a bug in the case, not in the lexicon.
 
 ## Layer 2: LLM-as-judge
 

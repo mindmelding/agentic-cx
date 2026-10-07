@@ -134,7 +134,35 @@ In paragraphs, the way a colleague would say it. Not a table dump.
 2. The three biggest gaps, each with why it matters for an agent product and the smallest step to close it.
 3. The first loop.
 
-Then ask one question: "Start with the first loop, or set up the floor first?" The floor setup is the [First Shift](../floor/FIRST-SHIFT.md). It configures the agent that drafts customer replies and fills the company overlay.
+Then ask one question: "Start with the first loop, or set up the floor first?"
+
+## 7. Set up the floor (when they say so)
+
+This configures the agent that drafts customer replies, and fills the company overlay. About fifteen minutes. Same rule: look before you ask.
+
+**Where the overlay lives.** `local/overlay/`, copied from [`../templates/house/overlay/`](../templates/house/overlay/README.md). Nothing in it is ever committed.
+
+**Confirm what is known.** Most answers came from steps 1 to 3. Bundle them in one message and ask "Anything to change?": who they are and how they sign off, what the company sells and to whom, the customer's file (the context source), how customers are told apart from prospects, the channels customers write in.
+
+**Ask the rest, one per turn, each with a default they can accept with "yes":**
+
+| Ask | Default | Writes to |
+|---|---|---|
+| Two of their own replies they're proud of, or two you found that they confirm | Skip allowed. The most valuable answer here | `exemplars.md` |
+| Anything they never want said | The canon lexicon | `voice-overrides.md` |
+| Who handles billing, security, product, and anything with a lawyer, and in which time zone | The operator, for everything | `people.md` |
+| Which written policies exist: refunds, SLAs, retention, plan changes | None. Anything unwritten is escalated | `policies.md` |
+| How much the agent may credit per incident without asking | 0. Every credit is a nudge | `authority.md` |
+| The same for gifts and gestures | 0 | `authority.md` |
+| Which customer fields may be read freely | Name, email, company, plan, time zone | `authority.md` |
+| When to say it is an agent, beyond when asked | When it materially matters | `authority.md` |
+| What first value looks like for a new customer | What the product repo or onboarding docs suggest | `product.md` |
+| Which moments a person holds, if different from the [floor default](../floor/README.md#who-holds-the-moment) | The default | `authority.md` |
+| How far back to look for what needs doing: 7, 14, or 30 days | 14 | `in-motion.md` |
+
+Write after every answer, and confirm what was saved in five words or fewer. A half-finished interview is still progress.
+
+**End with work, not "ready."** Read the window through the customer's file and come back with three to five things that need doing: overdue promises, threads waiting on us, onboarding stalls, accounts that went quiet, a first clean autonomous run worth telling a customer about. Each with a draft and the file it came from. Add one gesture from [`../floor/delight/catalog.md`](../floor/delight/catalog.md) if the record supports one. Everything is a draft. Ask: "Which one first?" Draft that one in full. Whatever they change is the first line of today's day note.
 
 ## After
 

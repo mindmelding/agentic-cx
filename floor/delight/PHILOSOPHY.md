@@ -8,7 +8,7 @@ last_reviewed: 2026-10-07
 
 # Delight
 
-Delight is the unreasonable thing done for one customer because someone noticed something true about them. It is the 5% in `principles/07-ninety-five-five.md`, and it only works when the 95% is already right.
+Delight is the unreasonable thing done for one customer because someone noticed something true about them. It is the 5% in p07 in `principles.md`, and it only works when the 95% is already right.
 
 The older idea of delight comes from a host who noticed, remembered, and did something kind. In a product where an agent does the customer's work, five parts of that break. What replaces them is below.
 
@@ -16,7 +16,7 @@ The older idea of delight comes from a host who noticed, remembered, and did som
 
 1. **Remembering is no longer a gesture.** Remembering how a guest takes their coffee was delightful because people forget. An agent that remembers is the minimum. One that forgets is a defect.
 2. **Speed is not delight.** Instant is the floor.
-3. **Scale kills scarcity.** An agent can send a "personal" note to every account by lunch. A gesture is a gesture because it is rare, and warmth that is plainly generated reads as an AI tell (`voice/ai-tells.md`).
+3. **Scale kills scarcity.** An agent can send a "personal" note to every account by lunch. A gesture is a gesture because it is rare, and warmth that is plainly generated reads as an AI tell (`voice/VOICE.md`).
 4. **Success is invisible.** The better the agent works, the less the customer sees it. Most of their contact with the product is output they glance at, or never review.
 5. **Doing the thing for them flips.** A person who builds the filter nobody asked for is the best person on the floor. An agent that acts without being asked has crossed its boundary. Acting unasked is how agents lose trust.
 
@@ -35,7 +35,7 @@ Chip and Dan Heath's four ingredients still apply: elevation, insight, pride, co
 | 7 | **Making the champion look good** | The person who delegated is now a supervisor. Their standing rides on it | Pride | [value note](../../templates/customer/value-note.md) |
 | 8 | **Delight downstream** | The agent's work reaches their customers. Tell them when it landed well there | Pride | — |
 | 9 | **An insight only the delegated work can show** | A pattern across their work that nobody else can see | Insight | — |
-| 10 | **A scarce, precise human** | A person, showing up on a ledger event, never on a calendar | Elevation | `channels/handwritten-note.md` |
+| 10 | **A scarce, precise human** | A person, showing up on a ledger event, never on a calendar | Elevation | `voice/VOICE.md` |
 
 The first seven are mostly sent by the agent. Eight and nine are found by the agent and checked by a person. Ten is a person, and only a person.
 
@@ -47,9 +47,9 @@ The first seven are mostly sent by the agent. Eight and nine are found by the ag
 
 **Never above the rung.** A gesture may offer more autonomy. It never takes it. Prepared work stays switched off.
 
-**Never fake a person.** A note the agent wrote is signed by the agent. A "handwritten" note is written by a hand. See `principles/12-never-pretend-to-be-human.md`.
+**Never fake a person.** A note the agent wrote is signed by the agent. A "handwritten" note is written by a hand. See p12 in `principles.md`.
 
-**Recovery first.** No receipt, no offer, and no gift to an account with an open incident or an open bug. Fix the friction first (`principles/06-reduce-effort-before-adding-delight.md`).
+**Recovery first.** No receipt, no offer, and no gift to an account with an open incident or an open bug. Fix the friction first (p06 in `principles.md`).
 
 **Scarcity, enforced.** At most one gesture per account per two weeks across all ten forms, and at most three per day per person on the floor. The agent could send more. That is the reason for the cap.
 

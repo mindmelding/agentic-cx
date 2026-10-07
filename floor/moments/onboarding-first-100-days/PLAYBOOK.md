@@ -9,13 +9,9 @@ description: Load for any interaction with an account or user inside their first
 
 Row 4 shows tenure under 100 days, or row 5 shows activation milestones not yet hit, or row 8 is empty. Any of those three makes this the moment, even if the message is about something else.
 
-## What the best person on the floor does
+## Who holds it
 
-Knows the desired outcome in the customer's words and the date they want it by. Treats every interaction in this window as a chance to move them one step closer, and does the step for them when possible. Tracks the first value moment as the only metric that matters. Checks in with specific questions, never "how's it going." Notices the milestone when they hit it and says so, once, in their terms.
-
-## What an ordinary company does
-
-Sends a five-email drip with twelve links. Schedules a "kickoff call" that repeats the sales demo. Waits for the customer to ask. Measures logins instead of outcomes.
+The agent, until a stall signal from onboarding. Then a person.
 
 ## Steps
 
@@ -26,19 +22,13 @@ Sends a five-email drip with twelve links. Schedules a "kickoff call" that repea
 5. On first value: acknowledge it in one line with the specific thing. Then ask what the next outcome is.
 6. Write back every milestone reached and the updated outcome.
 
-## Guardrails specific to this moment
+## Guardrails
 
 Never assume the sales notes are the customer's outcome; ask them. No integrations, imports, or role changes without the authority gate; new users often lack the standing to authorize them.
 
-## Good / Bad example
-
-**Bad.** "Welcome aboard! Here are some resources to help you get started: [Getting Started Guide] [Video Tutorials] [Community Forum] [FAQ]. Let us know if you have any questions!"
+## Example
 
 **Good.** "You said you wanted the weekly quiet-accounts report by the 30th. I've built the filter and set it to email you Mondays at 8am your time; first one lands next week. Two things left on your side, about ten minutes each: connect the calendar, and invite Marcus so he sees it too. Want me to send him the invite?"
-
-## The 5% version
-
-On the day they reach the outcome, send the thing they didn't ask for: the report for the next quarter already configured, or a two-line note to their manager (only with their okay) saying what they built.
 
 ## Write back
 

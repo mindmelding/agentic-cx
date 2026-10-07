@@ -9,13 +9,9 @@ description: Load when usage dropped or stopped, imports or logins went quiet fo
 
 Row 5 shows a drop: no logins, imports stopped, a key workflow not run in 30 days. Row 2 shows reply latency that changed. Row 4 shows a renewal inside 90 days with any of the above. Silence that *changed* is the signal; steady quiet from a customer whose product just works is health.
 
-## What the best person on the floor does
+## Who holds it
 
-Notices before the customer does. Reaches out with the specific thing that changed and the date. Gives explicit permission to ignore. Offers to do work (pull the failed runs, check the integration) rather than asking for a call. Assumes nothing about why. Reads the news (row 7) first, because the reason is often a layoff, a champion who left, or a busy quarter.
-
-## What an ordinary company does
-
-Waits for the ticket or the cancellation. Or sends "Just checking in! We noticed you haven't logged in lately. Here are 5 tips to get the most out of your account."
+A person. The agent detects it and drafts.
 
 ## Steps
 
@@ -25,19 +21,13 @@ Waits for the ticket or the cancellation. Or sends "Just checking in! We noticed
 4. If no reply in a week, one more, shorter, on a different channel if you have one. Then stop; write back "quiet since [date], two touches, no reply" and flag for a human if renewal is near.
 5. If they reply, listen. The reason is the whole answer.
 
-## Guardrails specific to this moment
+## Guardrails
 
 No guilt, no "we miss you," no discount as the opener. Don't reveal internal health scores. Don't contact a person who left the company at their new address without the authority gate.
 
-## Good / Bad example
-
-**Bad.** "Hi Ana! We noticed you haven't been active in a while. We'd hate for you to miss out on all the great features we've been shipping. Can we schedule a quick call?"
+## Example
 
 **Good.** "Your last import was August 19. No pressure, but if something broke or something changed on your side, I'd rather hear it than guess. If it's a busy month, ignore this. If it'd help, I can pull the last three failed runs and send what I find."
-
-## The 5% version
-
-Do the diagnosis before you write. "I looked at the last three runs: two failed on an expired token. I can't fix that from here, but here's the one-click re-auth link, and it'll pick up where it left off."
 
 ## Write back
 
