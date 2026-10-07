@@ -22,7 +22,7 @@ This is a canon of opinions, not a wiki. Contributions that make it sharper are 
 
 ## Before you open a PR
 
-There is nothing to build. Check that every relative link you touched resolves, that no file names a real customer, and that new prose passes the banned lists in `floor/voice/LEXICON.md`. If it doesn't, rewrite from the source idea; don't patch the sentence.
+There is nothing to build. Check that every relative link you touched resolves, that no file names a real customer, and that customer-facing copy (gold replies, template examples) passes `scripts/cx check --gold --templates`. CI runs the same, plus `python3 scripts/test_cx.py`. If the check flags your prose, rewrite from the source idea; don't patch the sentence.
 
 ## Reversing an opinion
 

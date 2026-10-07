@@ -18,7 +18,9 @@ A rung drops for any reason: a reversal, a broken `never`, a forensic review, or
 ## Example
 
 > From today, invoice follow-ups come to you as drafts again. One went to the wrong contact on Monday, and we want you to see each one until the fix is proven.
-> Once the fix ships, 25 clean drafts in a row puts it back. I'll tell you when it qualifies. — Priya
+> Once the fix ships, 25 clean drafts in a row puts it back. I'll tell you when it qualifies.
+>
+> Priya
 
 ## Do not
 

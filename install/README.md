@@ -43,7 +43,7 @@ The skills are meant to be run by a person at the start and end of the day. If y
 45 17 * * 1-5  cd ~/agentic-cx && claude -p "Run skills/close/SKILL.md"
 ```
 
-Codex: `codex exec "Run skills/open/SKILL.md"`. Give a scheduled run read access only, and no permission to send anything. [`models.toml`](../models.toml) says which tier of model suits each skill. The `cx` runner it mentions is not built yet.
+Codex: `codex exec "Run skills/open/SKILL.md"`. Give a scheduled run read access only, and no permission to send anything. [`models.toml`](../models.toml) says which tier of model suits each skill. Of the `cx` commands it mentions, only `scripts/cx check` exists so far.
 
 ## Staying current
 

@@ -24,7 +24,7 @@ Load [`floor/principles.md`](../floor/principles.md) too if the context budget a
 - **The authority gate.** Anything sensitive stops and asks the operator. Enforce the standing grants in code, not only in the prompt. The [failures](../failures/README.md) are what happens otherwise.
 - **The write-back.** After each substantive reply, post the touch note from the contract to your context store.
 - **The ledger row.** Record the moment slug and `held_by` beside the action class. See [`ledger.md`](../ledger.md).
-- **The lexicon.** Check each draft against the banned lists in `LEXICON.md` before it sends.
+- **The lexicon.** Run each draft through [`scripts/cx check -`](../scripts/cx) before it sends, or port its rules into your pipeline. It exits 1 on any violation.
 
 ## How to test it
 

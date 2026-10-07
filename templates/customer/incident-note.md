@@ -22,7 +22,9 @@ Naming the mistake first. In an agent product, recovery is the most frequent big
 > Yesterday at 4:10pm the agent sent two renewal reminders to Halvorsen, which you'd marked as in dispute. Both went to their AP inbox.
 > We've sent a correction from your address saying they were sent in error, and logged it on the account.
 > Reminders for your account are back to drafts until the fix ships and we've watched it for a week.
-> I own this. Next update by Thursday noon. — Priya
+> I own this. Next update by Thursday noon.
+>
+> Priya
 
 ## Do not
 
