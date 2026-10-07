@@ -9,7 +9,7 @@ machine_readable: true
 
 # Lexicon
 
-Single source. The prose below is loaded into the prompt; the lists are read by `scripts/fohcheck.py`. If you change one, you change the other, because they are the same file.
+Single source. The prose below is loaded into the prompt; the lists are read by `cx check`. If you change one, you change the other, because they are the same file.
 
 Two hundred banned words do more for a voice than two thousand words of tone description.
 

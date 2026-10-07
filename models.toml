@@ -1,0 +1,66 @@
+# Which model runs which part of the day.
+#
+# A tier is a job description. Each harness maps a tier to a model it knows.
+# `cx models` prints the resolved table. `cx run <skill>` uses it.
+# An empty model means "the harness default": the flag is dropped.
+
+[tiers]
+fast = "Reading, sorting, bookkeeping. Nothing a customer reads."
+standard = "Judgment a person is about to look at."
+frontier = "Words a customer reads, and calls that are hard to undo."
+judge = "Grading another model's reply. Prefer a different family from the drafter."
+
+[skills]
+setup = "standard"
+open = "fast"
+floor = "frontier"
+triage = "standard"
+close = "standard"
+friday = "frontier"
+eval-draft = "frontier"
+eval-judge = "judge"
+
+# Floor only. The moment can move the tier. Anything not listed uses the floor tier.
+[moments]
+small-moment = "standard"
+account-health-check = "standard"
+feature-launch = "standard"
+integration-setup = "standard"
+technical-troubleshooting = "standard"
+
+[eval]
+# The judge should not grade its own family. Point this at a second harness when one is installed.
+judge_harness = ""
+
+[harness.claude]
+command = ["claude", "-p", "{prompt}", "--model", "{model}", "--add-dir", "{kit}", "--add-dir", "{house}", "--permission-mode", "acceptEdits", "--allowedTools", "{allow}"]
+pure = ["claude", "-p", "{prompt}", "--model", "{model}", "--output-format", "text"]
+allow = ["Read", "Write", "Edit", "Glob", "Grep", "Bash(cx:*)", "Bash(python3:*)", "mcp__moonbase"]
+fast = "haiku"
+standard = "sonnet"
+frontier = "opus"
+judge = "sonnet"
+
+[harness.codex]
+command = ["codex", "exec", "-m", "{model}", "-C", "{house}", "--sandbox", "workspace-write", "{prompt}"]
+pure = ["codex", "exec", "-m", "{model}", "--sandbox", "read-only", "{prompt}"]
+fast = ""
+standard = ""
+frontier = ""
+judge = ""
+
+[harness.cursor]
+command = ["cursor-agent", "-p", "{prompt}", "--model", "{model}", "--output-format", "text"]
+pure = ["cursor-agent", "-p", "{prompt}", "--model", "{model}", "--output-format", "text"]
+fast = ""
+standard = ""
+frontier = ""
+judge = ""
+
+[harness.gemini]
+command = ["gemini", "-p", "{prompt}", "-m", "{model}", "--include-directories", "{kit},{house}"]
+pure = ["gemini", "-p", "{prompt}", "-m", "{model}"]
+fast = ""
+standard = ""
+frontier = ""
+judge = ""
