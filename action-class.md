@@ -17,6 +17,8 @@ Every class carries:
 | Approval | Who has to say yes, and at which rung. |
 | Default rung | Where a new account starts. |
 | Context floor | The facts and connections an account needs before a first instance is worth trying. |
+| Reach | The systems and credentials an instance may use. Anything it can reach that is not listed is a defect. |
+| Reversible | Whether an instance can be undone in one step, and by whom. Irreversible classes never run silently. |
 | Sources | The code paths that implement it. A change here marks the spec unverified. |
 
 ```yaml
@@ -30,6 +32,9 @@ never:
   - show one customer's users to another customer
 approval: none for a read. The answer is the action
 default_rung: 3
+reach:
+  - read access to the company's event stream
+reversible: yes. An answer changes nothing
 context_floor:
   - the company's event stream is connected
   - the activation event is named

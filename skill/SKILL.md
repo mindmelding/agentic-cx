@@ -64,6 +64,7 @@ Only what nothing on disk answered. Offer a default they can accept with "yes." 
 - Whether product has a tracker CX can file into, and who on product owns the line in [`../boundary.md`](../boundary.md).
 - For each `partial` or `absent` capability: where it lives today, if anywhere, who may write it, and whether they will take the default in `tools.md`.
 - What they would show their CEO to prove CX worked last quarter. The answer says which old metrics they are still reporting.
+- How the product is priced. Run the interview in [`../pricing.md`](../pricing.md#interview), one question per turn, after looking at the pricing page and any contract they share.
 
 ## 4. Score the gap
 
@@ -117,6 +118,7 @@ Operator: <name, title>. Team: <n>. Answers customers today: <agent | people | b
 ## Metrics you can report today
 ## Metrics still on the old scorecard
 ## Where the CX and product line sits differently from boundary.md
+## Pricing
 ## First loop
 ```
 

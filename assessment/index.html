@@ -1,0 +1,260 @@
+<title>Agentic CX Gap Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a ledger sheet. Questions on the left as ruled rows, the profile pinned on the right as a rung ladder; one column on phones. */
+:root {
+  --bg: #f1f4f2;
+  --sheet: #fbfcfb;
+  --fg: #16201c;
+  --muted: #56645e;
+  --line: #d3dcd7;
+  --accent: #2c5c4e;
+  --accent-soft: #dce9e3;
+  --gap: #a84a24;
+  --gap-soft: #f4e2d8;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715; --sheet: #182120; --fg: #e3ebe7; --muted: #95a59e; --line: #2c3935;
+    --accent: #7cc2ab; --accent-soft: #1f3530; --gap: #e98d63; --gap-soft: #3a241b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111715; --sheet: #182120; --fg: #e3ebe7; --muted: #95a59e; --line: #2c3935;
+  --accent: #7cc2ab; --accent-soft: #1f3530; --gap: #e98d63; --gap-soft: #3a241b; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); padding-inline: 16px; padding-block: 28px 56px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
+header { display: grid; gap: 10px; max-width: 70ch; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(28px, 4.4vw, 44px)/1.05 var(--display); font-stretch: 112%; margin: 0; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); }
+.example { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--accent-soft); border-radius: 6px; padding: 10px 14px; font-size: 14px; }
+.example[hidden] { display: none !important; }
+button { font: 600 14px/1 var(--body); color: var(--fg); background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; padding: 9px 14px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.primary { background: var(--accent); color: var(--sheet); border-color: var(--accent); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 28px; align-items: start; }
+@media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+fieldset { border: 0; margin: 0; padding: 20px 20px 22px; border-top: 1px solid var(--line); display: grid; gap: 10px; min-width: 0; }
+fieldset:first-child { border-top: 0; }
+legend { padding: 0; margin-bottom: 4px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+legend b { font: 600 19px/1.2 var(--display); font-stretch: 112%; }
+legend small { color: var(--muted); font-size: 13px; }
+label { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: start; cursor: pointer; }
+label input { position: absolute; opacity: 0; pointer-events: none; }
+label .lv { font: 500 12px/1 var(--mono); display: grid; place-items: center; height: 26px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font-variant-numeric: tabular-nums; }
+label .tx { padding-top: 2px; }
+label input:checked ~ .lv { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+label input:checked ~ .tx { font-weight: 600; }
+label:hover .lv { border-color: var(--accent); }
+aside { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 16px; min-width: 0; }
+@media (max-width: 880px) { aside { position: static; } }
+.card { background: var(--sheet); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 12px; }
+.card h2 { font: 600 13px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.score { display: flex; align-items: baseline; gap: 10px; }
+.score b { font: 800 40px/1 var(--display); font-stretch: 112%; font-variant-numeric: tabular-nums; }
+.score span { color: var(--muted); font-size: 14px; }
+.ladder { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.ladder li { display: grid; grid-template-columns: 112px minmax(0, 1fr) 22px; gap: 10px; align-items: center; font-size: 13px; }
+.rungs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.rungs.five { grid-template-columns: repeat(5, 1fr); }
+.rungs i { height: 12px; border-radius: 2px; background: var(--line); }
+.rungs i.on { background: var(--accent); }
+.rungs.low i.on { background: var(--gap); }
+.ladder em { font: 500 12px/1 var(--mono); font-style: normal; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.scale { display: flex; justify-content: space-between; font: 500 11px/1 var(--mono); color: var(--muted); padding-left: 122px; padding-right: 32px; }
+ol.gaps { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: g; }
+ol.gaps li { counter-increment: g; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; font-size: 14px; }
+ol.gaps li::before { content: counter(g); font: 500 12px/26px var(--mono); text-align: center; background: var(--gap-soft); color: var(--gap); border-radius: 4px; height: 26px; }
+ol.gaps b { display: block; }
+ol.gaps code { font: 500 12px/1.4 var(--mono); color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+footer { color: var(--muted); font-size: 13px; max-width: 70ch; }
+@media (prefers-reduced-motion: no-preference) { .rungs i { transition: background .2s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CX for agent products · self-check</div>
+    <h1>Where does your CX team stand when the product is an agent?</h1>
+    <p>Nine questions. Pick what is closest to true today, not what is planned. Levels run 0 to 3 like autonomy rungs. The ledger runs 0 to 4, because most other answers depend on it.</p>
+  </header>
+
+  <div class="example" id="example">
+    <span>Showing an example team's answers. Change any answer to make it yours.</span>
+    <button type="button" id="clear">Start blank</button>
+  </div>
+
+  <div class="grid">
+    <form class="sheet" id="form" autocomplete="off"></form>
+    <aside>
+      <div class="card">
+        <h2>Profile</h2>
+        <div class="score"><b id="total">0</b><span id="totalOf">of 28</span></div>
+        <div class="scale"><span>0</span><span>3</span></div>
+        <ul class="ladder" id="ladder"></ul>
+      </div>
+      <div class="card">
+        <h2>Close these first</h2>
+        <ol class="gaps" id="gaps"></ol>
+        <p class="note" id="nogaps" hidden>Every area is running. Re-check next quarter and compare.</p>
+      </div>
+      <div class="card">
+        <h2>Share</h2>
+        <p class="note">Copies a plain-text summary you can paste into Slack or a doc.</p>
+        <div class="row"><button type="button" class="primary" id="copy">Copy summary</button></div>
+        <p class="note" id="copied" hidden>Copied.</p>
+        <textarea id="fallback" rows="6" hidden style="width:100%;font:13px/1.4 var(--mono);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px"></textarea>
+      </div>
+    </aside>
+  </div>
+
+  <footer>From the agentic CX operating manual. Each area links to a page in the repo: the path is shown under each gap. The full check, run by an agent against your real tools and past chats, is the setup skill in <code>skill/SKILL.md</code>.</footer>
+</div>
+
+<script>
+const AREAS = [
+  { id: "ledger", name: "Ledger", note: "the record of every delegated action", max: 4, path: "ledger.md",
+    opts: ["We only know what customers tell us.",
+           "We grade a sample of the agent's actions by hand.",
+           "We can see the agent's output where it lands and infer what people did with it.",
+           "We can rebuild each action from product events or traces.",
+           "Every action has a row, with what a person did with it: accepted, edited, ignored, reversed."],
+    next: "Sample 20 actions per account in motion each week, and grade each one. Ask product for the five-column ledger with that evidence." },
+  { id: "onboarding", name: "Onboarding", note: "signup to first accepted action", path: "responsibilities/onboarding.md",
+    opts: ["Nobody owns it. New accounts find their own way.",
+           "Kickoffs, checklists, onboarding emails. Measured on setup complete or logins.",
+           "The agent asks for the customer's desired outcome, and we track the first accepted action.",
+           "We read a stall list daily and report time to first accepted action."],
+    next: "Have the agent ask the desired outcome before anything else, and define the five stall signals." },
+  { id: "context", name: "Context", note: "the facts the agent acts on", path: "responsibilities/context.md",
+    opts: ["Customer facts live in people's heads and CRM notes the agent never reads.",
+           "We keep a knowledge base or macros. The agent might use some of it.",
+           "Facts live in the product with an author and a source, and actions cite them.",
+           "We review idle and reversed facts weekly and report context health."],
+    next: "Move one account's key facts into the store the agent reads, each with an author and a source." },
+  { id: "change", name: "Change", note: "autonomy, account by account", path: "responsibilities/change.md",
+    opts: ["Autonomy is the same for every account, set at launch.",
+           "We push feature adoption and usage.",
+           "Autonomy can be set per account, but it moves when someone asks.",
+           "Each action class has a rung per account, and we propose promotions on a record."],
+    next: "Pick one action class, record its rung per account, and send the first promotion offer on evidence." },
+  { id: "value", name: "Value", note: "renewal told as transformed work", path: "responsibilities/value.md",
+    opts: ["Renewals are a pricing conversation.",
+           "Business reviews show usage, seats, and logins.",
+           "We can pull counts of what the agent did for each account.",
+           "Renewal stories cite specific accepted actions and the rungs that moved."],
+    next: "For the next renewal, write one value note that cites ledger rows and the champion's decisions." },
+  { id: "documentation", name: "Documentation", note: "the promise, and the check", path: "responsibilities/documentation.md",
+    opts: ["Docs are whatever got written at launch.",
+           "A help center that grows every release.",
+           "Each capability has a spec that says what it will never do.",
+           "Those never lines are checked against production weekly, and page count is falling."],
+    next: "Write one spec with its never lines and source paths, and remove one page the product now explains itself." },
+  { id: "forensics", name: "Forensics", note: "reconstructing one action", path: "responsibilities/forensics.md",
+    opts: ["When something goes wrong, we ask engineering.",
+           "We sample conversations for QA scores.",
+           "We can trace one action, but it needs an engineer.",
+           "We reconstruct any action in minutes and grade severity by reach."],
+    next: "Add a severity field to the ledger and practice one reconstruction end to end without an engineer." },
+  { id: "voice", name: "Voice", note: "flaws passed to the builders", path: "responsibilities/voice.md",
+    opts: ["Feedback lands in Slack and is gone.",
+           "A quarterly themes deck.",
+           "Flaws are tracked in a shared list.",
+           "Each flaw is one item with a count, passed or held daily, written in the product team's tracker shape."],
+    next: "Start a voice queue: one row per flaw, a count, a quote, and a daily pass or hold." },
+  { id: "floor", name: "Floor", note: "people and the agent, on the moments", path: "floor/README.md",
+    opts: ["People answer everything. The agent is not part of support.",
+           "The agent deflects, and people take what is left.",
+           "We have decided which moments the agent holds and which a person holds.",
+           "People spend freed time on human moments and going first, and their edits teach the agent."],
+    next: "Write down which moments a person holds. Move people's time there, and log each edit to an agent draft." }
+];
+const ORDER = ["ledger","onboarding","change","value","context","floor","voice","documentation","forensics"];
+const EXAMPLE = { ledger: 2, onboarding: 1, context: 1, change: 2, value: 1, documentation: 1, forensics: 0, voice: 2, floor: 1 };
+const KEY = "agentic-cx-gap-check";
+let answers = {};
+let isExample = true;
+try { const saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved && typeof saved === "object") { answers = saved; isExample = false; } } catch (e) {}
+if (isExample) answers = { ...EXAMPLE };
+
+const form = document.getElementById("form");
+form.innerHTML = AREAS.map(a => `
+  <fieldset>
+    <legend><b>${a.name}</b><small>${a.note}</small></legend>
+    ${a.opts.map((t, i) => `
+      <label><input type="radio" id="${a.id}-${i}" name="${a.id}" value="${i}"><span class="lv">${i}</span><span class="tx">${t}</span></label>`).join("")}
+  </fieldset>`).join("");
+
+function sync() {
+  AREAS.forEach(a => {
+    const v = answers[a.id];
+    form.querySelectorAll(`input[name="${a.id}"]`).forEach(inp => { inp.checked = String(v) === inp.value; });
+  });
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(answers)); } catch (e) {} }
+
+function scaled(a) { const v = answers[a.id]; if (v == null) return null; return a.max === 4 ? Math.min(3, Math.round(v * 3 / 4)) : v; }
+
+function gaps() {
+  const list = [];
+  const L = AREAS[0];
+  if (answers.ledger != null && answers.ledger < 2) list.push(L);
+  const rest = AREAS.filter(a => a.id !== "ledger" && answers[a.id] != null && answers[a.id] < 3)
+    .sort((x, y) => (answers[x.id] - answers[y.id]) || (ORDER.indexOf(x.id) - ORDER.indexOf(y.id)));
+  return list.concat(rest).slice(0, 3);
+}
+
+function render() {
+  let total = 0, answered = 0;
+  document.getElementById("ladder").innerHTML = AREAS.map(a => {
+    const v = answers[a.id];
+    const n = a.max || 3;
+    if (v != null) { total += v; answered++; }
+    const low = v != null && (a.max === 4 ? v < 2 : v < 2);
+    const cells = Array.from({ length: n }, (_, i) => `<i class="${v != null && i < v ? "on" : ""}"></i>`).join("");
+    return `<li><span>${a.name}</span><span class="rungs ${n === 4 ? "five" : ""} ${low ? "low" : ""}" aria-label="${a.name} level ${v ?? "unanswered"} of ${n}">${cells}</span><em>${v ?? "–"}</em></li>`;
+  }).join("");
+  document.getElementById("total").textContent = total;
+  const g = gaps();
+  document.getElementById("gaps").innerHTML = g.map(a => `<li><span><b>${a.name}, level ${answers[a.id]}</b>${a.next}<br><code>${a.path}</code></span></li>`).join("");
+  document.getElementById("nogaps").hidden = g.length > 0 || answered < AREAS.length;
+  document.getElementById("example").hidden = !isExample;
+}
+
+form.addEventListener("change", e => {
+  const t = e.target; if (!t.name) return;
+  if (isExample) { isExample = false; }
+  answers[t.name] = Number(t.value);
+  save(); render();
+});
+document.getElementById("clear").addEventListener("click", () => {
+  answers = {}; isExample = false; save(); sync(); render();
+});
+
+function summary() {
+  const lines = ["Agentic CX gap check", `Total: ${document.getElementById("total").textContent} of 28`, ""];
+  AREAS.forEach(a => lines.push(`${a.name}: ${answers[a.id] ?? "-"} of ${a.max || 3}`));
+  const g = gaps();
+  if (g.length) { lines.push("", "Close first:"); g.forEach((a, i) => lines.push(`${i + 1}. ${a.name}: ${a.next}`)); }
+  return lines.join("\n");
+}
+document.getElementById("copy").addEventListener("click", () => {
+  const text = summary();
+  const ok = () => { const c = document.getElementById("copied"); c.hidden = false; setTimeout(() => c.hidden = true, 1800); };
+  const fb = () => { const t = document.getElementById("fallback"); t.hidden = false; t.value = text; t.select(); };
+  try { navigator.clipboard.writeText(text).then(ok, fb); } catch (e) { fb(); }
+});
+
+sync(); render();
+</script>

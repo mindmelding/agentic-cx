@@ -36,6 +36,15 @@ The manual uses these words the same way on every page.
 - [`metrics.md`](metrics.md). The scorecard, and which old metric each number replaces.
 - [`roles.md`](roles.md). Support, success, onboarding, and documentation, and what each becomes.
 - [`boundary.md`](boundary.md). What CX builds, what product builds, and where work crosses.
+- [`pricing.md`](pricing.md). How the billable unit meets the rung profile, and the interview to find out.
+- [`agent-customers.md`](agent-customers.md). When the thing calling your product is the customer's agent.
+
+What the team hands customers, and what it learns from:
+
+- [`templates/customer/`](templates/customer/README.md). The messages an agent product owes its customers: the receipt, the promotion offer, the incident note, the value note a champion forwards.
+- [`enablement/`](enablement/README.md). How customers learn to supervise an agent. The part of the manual that changes monthly, refreshed by a skill.
+- [`failures/`](failures/README.md). Public cases of agent products doing harm, read as forensics.
+- [`assessment/`](assessment/index.html). A nine-question self-check a CX lead can run in five minutes and share.
 
 ## Principles
 
@@ -63,7 +72,7 @@ Who holds each one, and how that changes with team size, is in [roles](roles.md)
 
 ## The day
 
-Four skills: [open](skills/open/SKILL.md) when you start, [floor](skills/floor/SKILL.md) and [triage](skills/triage/SKILL.md) while the work is happening, [close](skills/close/SKILL.md) when you stop. The schedule is [`routines.md`](routines.md). What the day teaches stays in `local/learnings/`, gitignored, so it can move to another agent without publishing a customer's words. The shape of those files is in [`learnings/`](learnings/README.md).
+Four skills, plus a monthly [refresh](skills/refresh/SKILL.md) of the fast-moving pages: [open](skills/open/SKILL.md) when you start, [floor](skills/floor/SKILL.md) and [triage](skills/triage/SKILL.md) while the work is happening, [close](skills/close/SKILL.md) when you stop. The schedule is [`routines.md`](routines.md). What the day teaches stays in `local/learnings/`, gitignored, so it can move to another agent without publishing a customer's words. The shape of those files is in [`learnings/`](learnings/README.md).
 
 ## The floor
 

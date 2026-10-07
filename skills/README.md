@@ -8,6 +8,7 @@ Four skills. Plain Markdown. Any agent follows one by reading its `SKILL.md`.
 | During the day | [Floor](floor/SKILL.md) | One customer moment is handled, and any fact or flaw from it is written down. |
 | During the day | [Triage](triage/SKILL.md) | The waiting item is passed, held, or given a doc disposition. |
 | End of day | [Close](close/SKILL.md) | The day note exists. Friday's close has promoted or discarded the week. |
+| Monthly | [Refresh](refresh/SKILL.md) | Every harness row is verified within 90 days, and the changelog says what moved. |
 
 The schedule is [routines](../routines.md). Setup, once, is [skill/SKILL.md](../skill/SKILL.md).
 

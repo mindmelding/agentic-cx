@@ -3,34 +3,36 @@ id: delight-catalog
 type: delight
 status: active
 confidence: medium
-last_reviewed: 2026-09-14
+last_reviewed: 2026-10-07
 ---
 
 # Delight catalog
 
-Triggers to watch, and the gesture each one earns. Contract rows refer to `context/CONTRACT.md`. Cost tiers: **free**, **under-ceiling** (a standing grant covers it), **nudge** (ask the operator first).
+Triggers to watch, and the gesture each one earns. Most triggers are ledger events. The forms are in `PHILOSOPHY.md`. Cost tiers: **free**, **under-ceiling** (a standing grant covers it), **nudge** (ask the operator first).
 
-Before any of these: check row 9 (delight history) and skip anything already sent.
+Before any of these: check row 9 (delight history), check there is no open incident on the account, and skip anything already sent.
 
-| Trigger | Signal (contract row) | Gesture | Example line | Cost |
-|---|---|---|---|---|
-| Product milestone (first integration live, Nth record, first report shared) | Row 5, product state | Name the number, then hand them the one thing that makes the next level easier | "10,000 records went in last night. The weekly digest is worth turning on now; I've queued it, say the word and it's live." | free |
-| Stage graduation (trial to paid, first team invited, health turned around) | Row 4, relationship | Acknowledge the turn and name what they did that caused it | "Three people on the account now and every one of them ran an import this week. That's the part most teams never get to." | free |
-| Resurrection (a quiet account logs back in) | Row 5 and row 2, a change in silence | Warm, no guilt, offer to pick up where they left off | "Good to see you back in. The import you started in July is still there if you want to finish it; I can clear the failed rows first." | free |
-| Public win (funding, launch, award, press) | Row 7, business context, verified | Specific congratulations tied to the thing itself, one line about what it means for what they're building | "Saw the launch went out Tuesday. If the new volume changes anything on your side, I've got you." | free |
-| Champion promotion or job change | Row 3 and row 7 | Personal congratulations; if they moved, help them take the work with them | "Congrats on the new role. If you want the setup you built here documented so the next person isn't starting cold, I'll write it up." | free |
-| Friction to delight (a bug hit them and they haven't written in yet) | Row 5, recent errors | Name it, name the fix, say you're on it, before they complain | "Your Tuesday import failed on one row. I've corrected it and re-run; all 1,204 are in. Sorry, that shouldn't have failed the file." | free |
-| Said something they care about (a goal, a frustration, an interest, in passing) | Row 2, last touches; row 8, desired outcome | Follow through unprompted. Build the thing, send the thing. The highest-tier move in this catalog | "You mentioned wanting the quiet-accounts list every Monday. Built it. It's on your dashboard now." | free |
-| Small-moment pattern noticed (third reset, same question twice, recurring invoice confusion) | Row 2, last touches | Do the transaction in five words, then offer the fix for the pattern | "Reset sent. Also, three resets this quarter; if it's the SSO redirect, two minutes fixes it." | free |
-| Anniversary, only with a specific | Row 4, tenure; row 5 for the specific | Skip the anniversary. Send the specific. | "Two years today, and 400,000 records since. The first one was a test row called 'hello'. Still there." | free |
-| Their bad day (layoffs, a champion leaving, personal news they raised) | Row 2 and row 7 | Presence, brevity, one useful thing. No pitch. | "Heard about the cuts. If the account needs to shrink or pause, one line from you and I'll handle it, no forms." | free |
-| Physical gesture (coffee, lunch, a book, a note) | Any of the above, when the moment is bigger than words | Handwritten note or a small gift with a specific detail on it | "Dana, 1,204 records and not one bounce. You built that. Coffee's on us next time you're in the city." | under-ceiling or nudge |
+| Trigger | Signal | Form | Example line | Who sends | Cost |
+|---|---|---|---|---|---|
+| First full cycle on its own | First week of a class at rung 3, no reversals | 1 Receipt | "The Wednesday report went out on its own for the first time. Nobody touched it." | Agent | free |
+| Outcome milestone | Count on the class that serves row 8 crosses a number they'd care about | 1 Receipt | "That's the hundredth overdue invoice chased this quarter. 91 were paid within a week." | Agent | free |
+| Promotion bar met | 50 in a row, 95% accepted, no violations | 2 Next rung | "52 of the last 52 went out as drafted. Want me to send them without waiting?" | Agent, after a person approves | free |
+| A correction used | A corrected fact cited three times | 3 Correction landed | "You told me Tuesday Acme uses its legal name. Used it on 14 since." | Agent | free |
+| Work they keep doing by hand | The same manual task twice, or a question about it | 4 Prepared, not done | "Built the Q4 deck from the same sources. Off until you say so." | Agent | free |
+| A risky action held | A check or the agent declined, with a reason they'd want | 5 Restraint | "Didn't send it. Four times their usual amount." | Agent | free |
+| Harm, caught first | Forensics severity 1–3 visible to them | 6 Naming the mistake | "Two reminders went to an account in dispute. Both corrected." | Person at sev 1–2 | free |
+| Renewal ahead, or outcome reached | Renewal in 60 days, or row 8 met | 7 Champion | A note written for their boss, sent to them | Person | free |
+| Their customer reacted well | A reply to the agent's output, positive, from a third party | 8 Downstream | "Three of your clients replied 'that was fast' this week." | Agent finds, person checks | free |
+| A pattern in their edits | The same section edited in most drafts | 9 Insight | "Your team edits the pricing paragraph in 70% of drafts. It's probably the template." | Agent finds, person checks | free |
+| A hard week, survived | A demotion, then a clean return to the rung | 10 Human | A short note from the person who owned the incident | Person | free or under-ceiling |
+| A big first | First rung 3 class on the account, or the stated outcome reached | 10 Human | A handwritten note with the number on it | Person | under-ceiling or nudge |
+| Champion promotion or job change | Row 3 or row 7, verified | 10 Human | "Congrats on the new role. Want the setup you built documented for whoever's next?" | Person | free |
+| Their bad day | Layoffs, a champion leaving, news they raised | 10 Human | "If the account needs to shrink or pause, one line from you and I'll handle it." | Person | free |
 
 ## Rules that apply to every row
 
 1. One verifiable detail, cited in the draft so the operator can check it.
-2. Tie to their goal. Delight is about them.
-3. Light touch, one emoji at most, no hype adjectives.
-4. Prefer a small thing done over a nice thing said.
-5. Thin evidence means skip.
-6. Write it back to the file when sent.
+2. Their outcome, in their words.
+3. Prefer a thing prepared over a thing said. Never a thing done above the rung.
+4. Thin evidence means skip.
+5. Write it back to the file when sent.
