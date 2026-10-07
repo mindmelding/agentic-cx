@@ -18,6 +18,6 @@ Read [`routines.md`](../../routines.md), [`responsibilities/context.md`](../../r
    - **Voice.** A flaw in the product. Update one row in `voice-queue.md` using the item fields on the voice page. The same flaw increments the count and adds a quote.
    - **Skip.** Say so in one line.
 4. Save the cursor at the top of `voice-queue.md`.
-5. Post the board, and stop. At most five lines: what arrived, what is still open (holds, unverified specs), and which of the two daytime skills to use first (`floor` if someone is waiting, `triage` if a decision is waiting). Do not file an issue. Do not edit a spec.
+5. Post the board, and stop. At most five lines: what arrived, what is still open (holds, unverified specs, stalled onboardings with no person or skip), and which of the two daytime skills to use first (`floor` if someone is waiting, `triage` if a decision is waiting). Do not file an issue. Do not edit a spec.
 
 `voice-queue.md`, `context-inbox.md`, and `local/` stay on the machine.

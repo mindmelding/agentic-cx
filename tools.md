@@ -15,6 +15,14 @@ A capability is **found** when a signal matches. It is **partial** when a nearby
 
 ## Capabilities
 
+### Onboarding
+
+| Capability | What it must do | Signals | Default if absent |
+|---|---|---|---|
+| First-run path | The agent asks the desired outcome, then the context floor for the first class | An onboarding or setup flow; a first-run prompt | A first-run prompt in the agent that asks the outcome before anything else |
+| Activation events | Signup, context floor met, first action, first accepted action | Events named `signup`, `activated`, `first_*`; an activation funnel in product analytics | Rows on the action ledger. No separate funnel tool |
+| Stall list | New accounts and groups that tripped a stall signal | A lifecycle tool's segment; a CRM view; an analytics cohort | A saved query over the ledger. Signals in [onboarding](responsibilities/onboarding.md) |
+
 ### Context
 
 | Capability | What it must do | Signals | Default if absent |

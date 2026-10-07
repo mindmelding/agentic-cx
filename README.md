@@ -1,12 +1,18 @@
 # CX in the age of agents
 
-An operating manual for customer experience at a company whose product does work on a customer's behalf. Written to be adopted by a new company as it stands, and adapted to the tools that company already runs.
+An operating manual for customer experience at a company whose product does work on a customer's behalf, often through an agent the customer talks to directly. It is for the person running CX there. The conventional support and success playbook measures the wrong things in that product, and this is the replacement. Written to be adopted by a new company as it stands, and adapted to the tools that company already runs.
 
 The responsibilities below are the job. This page is the position they sit on. The day is four skills: [open](skills/open/SKILL.md) when you start, [floor](skills/floor/SKILL.md) and [triage](skills/triage/SKILL.md) while the work is happening, [close](skills/close/SKILL.md) when you stop. The schedule is [`routines.md`](routines.md).
 
-The floor canon lives in [`floor/`](floor/README.md): mindset, precedence, one moment playbook, the context contract. What the day teaches stays in `local/learnings/`, gitignored, so it can move to another agent without publishing a customer's words. The shape of those files is in [`learnings/`](learnings/README.md).
+The floor canon lives in [`floor/`](floor/README.md): how customers are supported when the agent answers most of what comes in. It says which moments the agent holds alone and which a person holds, and what people on the team do with the time the agent freed. What the day teaches stays in `local/learnings/`, gitignored, so it can move to another agent without publishing a customer's words. The shape of those files is in [`learnings/`](learnings/README.md).
 
-A setup skill in [`skill/SKILL.md`](skill/SKILL.md) interviews a repo, with permission to scan, and maps the tools in [`tools.md`](tools.md) onto whatever it finds. It runs once.
+Three pages frame the job:
+
+- [`metrics.md`](metrics.md). The scorecard, and which old metric each number replaces.
+- [`roles.md`](roles.md). Support, success, onboarding, and documentation, and what each becomes.
+- [`boundary.md`](boundary.md). What CX builds, what product builds, and where work crosses.
+
+A setup skill in [`skill/SKILL.md`](skill/SKILL.md) interviews the operator. With permission, it reads past chats, connected tools, and the product repo, scores each responsibility against where the team is today, and writes a gap report and a local `stack.md`. Run it once to start, and again each quarter.
 
 ## The shift
 
@@ -29,10 +35,11 @@ Two uses of AI stay separate:
 
 ## Responsibilities
 
-Each page uses the same headings: mandate, delivered when, the loop, tools, cadence, artifacts, measures.
+Onboarding is numbered zero because it comes first in an account's life and repeats for every new group. The rest run for the life of the account. Each page uses the same headings: mandate, delivered when, the loop, tools, cadence, artifacts, measures.
 
 | | Responsibility | Delivered when |
 |---|---|---|
+| 0 | [Onboarding](responsibilities/onboarding.md) | Each new account and group has a stated outcome, a first accepted action, and a person reached it when it stalled. |
 | 1 | [Context](responsibilities/context.md) | Facts the customer depends on are in the product, current, and cited in accepted work. |
 | 2 | [Change](responsibilities/change.md) | A named group has moved a capability up a rung on evidence, or been told why it stays. |
 | 3 | [Value](responsibilities/value.md) | Renewal and expansion cite transformed work from the ledger. |
@@ -40,15 +47,15 @@ Each page uses the same headings: mandate, delivered when, the loop, tools, cade
 | 5 | [Forensics](responsibilities/forensics.md) | A harmful action has a severity, an owner, and a cause in under two minutes. |
 | 6 | [Voice](responsibilities/voice.md) | A product flaw has been passed to the builders, or held, and the issue was already written in their tracker's shape. |
 
-Tools are named as capabilities in [`tools.md`](tools.md). The skill fills a local `stack.md` with the products this company actually uses, and recommends a default only where a capability is missing.
+Who holds each one, and how that changes with team size, is in [roles](roles.md). Tools are named as capabilities in [`tools.md`](tools.md). The skill fills a local `stack.md` with the products this company actually uses, and recommends a default only where a capability is missing.
 
 ## Cadence
 
 The detail lives on each responsibility page. Across the team:
 
-- **Daily.** Clear the moment queue, and the voice queue. Pass or hold each new flaw. Read what the system did that a person has to be the one to handle.
+- **Daily.** Clear the stall list, the moment queue, and the voice queue. Pass or hold each new flaw. Read what the system did that a person has to be the one to handle.
 - **Weekly.** Check declared boundaries against last week's actions. Retire one page the product can now say itself.
-- **Quarterly.** Review the rung profile. Attach the value story to the ledger. Propose the next promotions.
+- **Quarterly.** Re-run the setup skill and compare the gap report to last quarter's. Review the rung profile. Attach the value story to the ledger. Propose the next promotions.
 
 ## A two-week start
 

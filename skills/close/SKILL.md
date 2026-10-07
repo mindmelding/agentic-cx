@@ -32,7 +32,7 @@ Create `local/learnings/YYYY-MM-DD-short-slug.md`:
 ```yaml
 ---
 date: YYYY-MM-DD
-responsibility: context | change | value | documentation | forensics | voice
+responsibility: onboarding | context | change | value | documentation | forensics | voice | floor
 kind: fact | flaw | boundary | rung | doc
 summary: one sentence
 decision: what was decided
