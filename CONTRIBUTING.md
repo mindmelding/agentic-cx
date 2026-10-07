@@ -18,17 +18,11 @@ This is a canon of opinions, not a wiki. Contributions that make it sharper are 
 
 - Generic best practice without an opinion.
 - Anything that loosens a guardrail. Overlays narrow; the canon doesn't loosen.
-- Edits to `adapters/`. They're generated.
 - Company-specific policy. That's your overlay.
 
 ## Before you open a PR
 
-```
-make build   # regenerate adapters
-make check   # lexicon check over the whole repo + adapters fresh
-```
-
-CI runs the same. If `fohcheck` flags your prose, rewrite from the source idea; don't patch the sentence.
+There is nothing to build. Check that every relative link you touched resolves, that no file names a real customer, and that new prose passes the banned lists in `floor/voice/LEXICON.md`. If it doesn't, rewrite from the source idea; don't patch the sentence.
 
 ## Reversing an opinion
 

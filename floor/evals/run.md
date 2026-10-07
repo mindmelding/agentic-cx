@@ -12,6 +12,8 @@ Two layers. The first is deterministic and cheap. The second is a model judging 
 
 ## Layer 1: deterministic
 
+The `cx` command below is planned, not built. Until it exists, check a reply against the lists in `voice/LEXICON.md` by hand or with a short script.
+
 `cx check` reads `voice/LEXICON.md` and scans a reply for banned phrases, banned words, banned openers, and structural patterns. Code blocks are stripped before scanning. It exits non-zero on any violation and prints each one with the offending text.
 
 ```

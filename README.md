@@ -4,6 +4,10 @@ For CX teams at companies whose product is an agent. The customer delegates work
 
 It is not a guide to putting an AI agent in front of your support queue. That is a different job, and well covered elsewhere.
 
+## Get started
+
+Clone the repo, open your agent in it, and run the setup skill. Per-host steps are in [`install/`](install/README.md). To see where your team stands first, without installing anything, use the [self-check](assessment/index.html).
+
 ## The shift
 
 Conventional customer-success metrics count a person operating software: logins, seats, time in the product, feature adoption. In a product the customer delegates to, successful use drives that time down. A scorecard built on sessions will call a healthy account quiet and a struggling account engaged.

@@ -44,4 +44,4 @@ A person who spends the day on moments the agent could hold alone is a sign the 
 
 A company overlay is not in this folder. Grants, learned phrases, and what was already sent stay in `local/` at the repo root. The day note in `local/learnings/days/` is the old inbox. Lessons do not come back into this canon.
 
-Install adapters, evals tooling, and the check script still live in the front-of-house repo until the packaging pass. Edit the canon here.
+To load this canon into the agent that replies to your customers, see [`install/customer-agent.md`](../install/customer-agent.md). There is no generated bundle or check script yet. Edit the canon here.

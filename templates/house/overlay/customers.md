@@ -1,4 +1,4 @@
-# Who counts as a customer (local, filled in by the First Shift)
+# Who counts as a customer (local, filled in by the setup skill)
 
 rule: <the operator's rule, e.g. "account stage is Onboarding, Active, or At Risk" or "on the paying list at <path>">
 source of the rule: <operator said so | proposed heuristic, confirmed 2026-..-..>
