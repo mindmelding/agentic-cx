@@ -4,7 +4,7 @@ An operating manual for customer experience at a company whose product does work
 
 The responsibilities below are the job. This page is the position they sit on. The day is four skills: [open](skills/open/SKILL.md) when you start, [floor](skills/floor/SKILL.md) and [triage](skills/triage/SKILL.md) while the work is happening, [close](skills/close/SKILL.md) when you stop. The schedule is [`routines.md`](routines.md).
 
-Floor loads [front-of-house](https://github.com/scmancillas/front-of-house) for how a moment is handled. What the day teaches stays in `local/learnings/`, gitignored, so it can move to another agent without publishing a customer's words. The shape of those files is in [`learnings/`](learnings/README.md).
+The floor canon lives in [`floor/`](floor/README.md): mindset, precedence, one moment playbook, the context contract. What the day teaches stays in `local/learnings/`, gitignored, so it can move to another agent without publishing a customer's words. The shape of those files is in [`learnings/`](learnings/README.md).
 
 A setup skill in [`skill/SKILL.md`](skill/SKILL.md) interviews a repo, with permission to scan, and maps the tools in [`tools.md`](tools.md) onto whatever it finds. It runs once.
 

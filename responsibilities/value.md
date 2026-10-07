@@ -31,7 +31,9 @@ An events, actions, or audit table. A CRM opportunity or a billing subscription.
 
 Postgres, with the columns below. The renewal date is the one already in the CRM. The story stores the ledger ids it depends on.
 
-Suggested columns: id, time, build, account, actor, action class, rung, context cited, payload, boundary checks, disposition (`accepted`, `edited`, `ignored`, `reversed`, `blocked`), disposed by, edit diff, later outcome, harm.
+Suggested columns: id, time, build, account, actor, action class, moment, rung, context cited, payload, boundary checks, disposition (`accepted`, `edited`, `ignored`, `reversed`, `blocked`), disposed by, edit diff, later outcome, harm.
+
+`moment` is the playbook slug from [`floor/moments`](../floor/moments/README.md) when a person was on the other end. It is empty when the product acted and no reply was owed.
 
 ## Cadence
 

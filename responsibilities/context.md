@@ -37,6 +37,12 @@ One product that does all three. [Moonbase](https://moonbase.ai) is the referenc
 - **Weekly.** Read the idle list and the reversed-citation list for the accounts in motion.
 - **Quarterly.** Report the context health ratio next to the rung profile.
 
+## What the agent reads first
+
+Before a reply, the [floor](../floor/README.md) skill reads the [context contract](../floor/context/CONTRACT.md). Ten rows, in order: open commitments, unresolved issues and the last five touches, identity, relationship, product state, preferences, business context, desired outcome in their words, delight history, sensitive fields.
+
+The moment is chosen from those rows plus the message. Silence, a refund owed but not asked for, and a first hundred days that has not reached the outcome are invisible in the latest message alone. This page is the job of keeping the rows true. The contract is the list. The reference adapter is [Moonbase](../floor/context/adapters/moonbase.md).
+
 ## Artifacts
 
 - The memory record: fact, scope (account or wider), author, time, evidence, idle flag.

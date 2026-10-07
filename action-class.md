@@ -48,3 +48,7 @@ A new class opens when the product can now do a kind of work with its own trigge
 - [Documentation](responsibilities/documentation.md) keeps one spec per class and decides, after the sources change, whether anything public has to move.
 - [Forensics](responsibilities/forensics.md) reconstructs one instance and may demote the class.
 - [Voice](responsibilities/voice.md) turns the same flaw, seen across instances, into one item a person can pass to the builders.
+
+## When a person is on the other end
+
+The class is the capability. The moment is the situation. An instance that is also a reply records the playbook that fired, from [`floor/moments`](floor/moments/README.md), on the ledger row next to the class and the rung. `answer_behavior_question` often has no moment. A broken import handled on the floor can have both: the class, if the product did something, and `bug-report`. The [floor skill](skills/floor/SKILL.md) chooses the playbook after reading the [context contract](floor/context/CONTRACT.md).

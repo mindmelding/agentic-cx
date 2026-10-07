@@ -6,7 +6,7 @@ Two layers.
 
 **The record is in `local/learnings/`.** It is gitignored. It holds the day notes and the promoted decisions for one company. Copy `local/` onto another machine, or point another harness at it. Do not commit it. Customer words do not belong in the public manual.
 
-This is the same split as [front-of-house](https://github.com/scmancillas/front-of-house): the canon is shared, and what a house learns stays in its overlay. Here the overlay is `local/learnings/`. Close writes it. Floor appends a line during the day when a phrase or a miss should not wait until evening.
+The public canon is [`floor/`](../floor/README.md). What a house learns stays in `local/learnings/`. Close writes it. Floor appends a line during the day when a phrase or a miss should not wait until evening.
 
 ## A day note
 

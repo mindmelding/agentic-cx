@@ -35,7 +35,6 @@ Also ask, once:
 
 - Which channel does this team already work in (Slack, email, a ticket tool, something else)?
 - Which tools are inward only (summaries, deflection, QA on the team's own queue)?
-- Where is [front-of-house](https://github.com/scmancillas/front-of-house) checked out, if it is? The floor skill loads it. If it is not on disk, leave the path blank.
 
 Do not propose a vendor for a capability you marked `found`.
 
@@ -50,11 +49,7 @@ Create `stack.md` at the root of this operating-manual repo. One section per res
 - Correction path: partial, memories are editable in admin, no customer path yet
 ```
 
-End with a short "first loop" that names the single action class they should instrument, using only the tools now listed. Point at the two-week start in the README. If front-of-house was found, add one line:
-
-```markdown
-front_of_house: /absolute/path/to/front-of-house
-```
+End with a short "first loop" that names the single action class they should instrument, using only the tools now listed. Point at the two-week start in the README. The floor canon is already in [`floor/`](../floor/README.md).
 
 ## After
 

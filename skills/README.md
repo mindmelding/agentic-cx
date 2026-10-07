@@ -11,4 +11,4 @@ Four skills. Plain Markdown. Any agent follows one by reading its `SKILL.md`.
 
 The schedule is [routines](../routines.md). Setup, once, is [skill/SKILL.md](../skill/SKILL.md).
 
-[Front of House](https://github.com/scmancillas/front-of-house) is the canon the floor skill loads: mindset, one moment playbook, read the file before the reply. Lessons from those moments do not go back into that public canon. They go into `local/learnings/`, which is gitignored here and is what you copy when you change agents. The shape of a learning is in [learnings](../learnings/README.md).
+The floor skill loads [`floor/`](../floor/README.md): mindset, precedence, and one moment playbook, after reading the customer's file. Lessons from those moments stay in `local/learnings/`, which is gitignored and is what you copy when you change agents. The shape of a learning is in [learnings](../learnings/README.md).

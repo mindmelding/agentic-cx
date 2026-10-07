@@ -1,6 +1,6 @@
 # Routines
 
-Four skills. The floor canon is [front-of-house](https://github.com/scmancillas/front-of-house). This repo does not copy it. Front of House is how a moment is handled. These skills are when, and what is kept.
+Four skills. The floor canon is [`floor/`](floor/README.md). It is how a moment is handled. These skills are when, and what is kept.
 
 Company notes stay in `local/`. Copy that folder to move them to another machine or another agent. The public manual stays free of one company's customers.
 
