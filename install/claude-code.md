@@ -17,7 +17,7 @@ claude
 | `/cx-close` | [`skills/close/SKILL.md`](../skills/close/SKILL.md) |
 | `/cx-refresh` | [`skills/refresh/SKILL.md`](../skills/refresh/SKILL.md) |
 
-Start with `/cx-setup`.
+Start with `/cx-setup`. After that, the day is `/cx-open`, then `/cx-triage` until the queue is done, then `/cx-close`.
 
 ## Working from another directory
 

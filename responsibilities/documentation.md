@@ -46,6 +46,8 @@ The first times a change like this ships, a person confirms "no documentation." 
 | Update | The code changed the boundary or the trigger. The spec changes with it. |
 | Remove | The product now says this, or does this. The page or guide comes down. |
 
+An existing help center rarely fits these on day one. Keep it, as a [bridge](../bridges.md): count the live pages, and take them down as each class's spec and the product's own answers replace them. A page written because inbound keeps asking something the product cannot answer yet is a bridge too, paired with the flaw that would make it unnecessary.
+
 A page or guide survives for a reason:
 
 | Form | Why it exists |
@@ -65,9 +67,9 @@ This is the same ladder as [change](change.md), applied to the doc decision rath
 | 0 Propose | The check names the specs a commit touched and stops. A person classifies each one. |
 | 1 Draft | The check proposes a disposition, with the diff and the current spec beside it. A person accepts or edits. |
 | 2 Act with notice | Repeated, low-risk dispositions apply. Marking a spec unverified is the usual one. A person can reverse it. Elevating a guide and removing a page stay at draft until their own record is strong. |
-| 3 Act silently | A disposition that has been accepted without edit, on a class whose boundary did not move, applies and appears in the decision log. |
+| 3 Act silently | Only marking a spec unverified. A disposition itself tops out at act with notice: it applies, and the operator sees it in the next receipt, because a page coming down is public. |
 
-A new company starts at 0. A rung moves on the record of accepted decisions, the same way a customer capability does. Removing a witness line does not go silent. A boundary a person has to stand behind stays with a person.
+These rungs are the `spec-flag` and `doc-decision` kinds in the team's [queue](../queue.md#kinds), which holds the ceilings. A new company starts at 0. A rung moves on the record of accepted decisions, the same way a customer capability does. Removing a witness line does not go silent. A boundary a person has to stand behind stays with a person.
 
 ## Tools
 
@@ -102,4 +104,4 @@ Markdown or YAML in the repo, one file per class, with a `sources` list. Render 
 
 ## Measures
 
-Share of `never` lines verified against production in the last week. Page count, and how many pages were removed because the product now speaks. A growing site is a finding, not a publishing win.
+Share of `never` lines verified against production in the last week. Page count, and how many pages were removed because the product now speaks. While the old help center is a bridge, its live page count against the baseline. A growing site is a finding, not a publishing win.

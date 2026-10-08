@@ -32,4 +32,4 @@ Keep keys in environment variables, never in a file in this repo.
 
 ## Nothing connected
 
-Everything still runs. Setup interviews you instead of reading. The floor treats each customer as a first conversation and says so. The ledger runs at level 0 or 1, by hand. Facts collect in `context-inbox.md` until there is somewhere to put them.
+Everything still runs. Setup interviews you instead of reading. The floor treats each customer as a first conversation and says so. The ledger runs at level 0 or 1, by hand. Facts wait as `fact` items in the queue until there is somewhere to put them.

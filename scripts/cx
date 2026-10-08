@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """cx: command-line helpers for the agentic CX manual.
 
-Only `cx check` exists today. It reads the banned lists in
-floor/voice/LEXICON.md and scans a reply for them.
+cx check scans replies against floor/voice/LEXICON.md. cx init, cx queue,
+and cx report keep the team's queue honest; their formats are in queue.md.
 
     scripts/cx check reply.md          check one or more files
     scripts/cx check - < reply.md      check stdin
     scripts/cx check --gold            check every gold reply in floor/evals/cases/
     scripts/cx check --templates       check the examples in templates/customer/
     scripts/cx check --strict ...      treat warnings as failures
+    scripts/cx init                    create local/queue.md, log.md, rungs.md, rules.md, bridges.md
+    scripts/cx queue [--top 5]         check items, print them in triage order
+    scripts/cx queue --expire --apply  expire items untouched for 14 days, and log them
+    scripts/cx report                  the Friday numbers, promotions, rules, producers, bridges
 
 Exit codes: 0 clean, 1 at least one violation, 2 usage or lexicon error.
 """
@@ -221,6 +225,288 @@ def cmd_check(args):
     return 1 if errors else 0
 
 
+# ---------------------------------------------------------------------------
+# The queue: init, queue, report. Formats are defined in queue.md.
+
+import datetime as _dt
+
+QUEUE_SPEC = ROOT / "queue.md"
+LOCAL = ROOT / "local"
+RUNGS = ("propose", "draft", "notice", "silent")
+RUNG_WORDS = {"propose": "propose", "draft": "draft", "act with notice": "notice", "act silently": "silent",
+              "notice": "notice", "silent": "silent"}
+BANDS = {"reply": 1, "reply-person": 1, "incident": 2, "stall": 3, "silence": 3,
+         "flaw": 4, "doc-decision": 4, "promotion": 4, "setup": 5}
+REQUIRED = ("why", "source", "handler", "rung", "sensitive", "opened", "status")
+OPEN_STATUSES = ("open", "blocked")
+CLEAN = ("accepted", "done")
+DISPOSITIONS = ("accepted", "edited", "rejected", "deferred", "dropped", "done", "reversed", "expired")
+PROMOTION_RUN, PROMOTION_DAYS, EXPIRE_DAYS = 20, 14, 14
+RULE_EDITS, RULE_DAYS, PRODUCER_DROPS, BRIDGE_STALE_DAYS = 3, 30, 5, 28
+
+
+def _date(s):
+    m = re.search(r"\d{4}-\d{2}-\d{2}", s or "")
+    return _dt.date.fromisoformat(m.group(0)) if m else None
+
+
+def _rung(text):
+    key = re.sub(r"[*`]", "", text).strip().lower()
+    key = re.sub(r"^\d+\s+", "", key)
+    if key not in RUNG_WORDS:
+        raise SystemExit(f"cx: unknown rung {text!r}")
+    return RUNG_WORDS[key]
+
+
+def load_kinds(path=QUEUE_SPEC):
+    """{kind: (start, ceiling)} from the Kinds table in queue.md."""
+    raw = path.read_text(encoding="utf-8")
+    section = re.search(r"^## Kinds\s*\n(.*?)(?=^## |\Z)", raw, re.S | re.M)
+    kinds = {}
+    for row in (section.group(1) if section else "").splitlines():
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        if len(cells) == 5 and cells[0].startswith("`"):
+            kinds[cells[0].strip("`")] = (_rung(cells[3]), _rung(cells[4]))
+    if not kinds:
+        raise SystemExit(f"cx: no kinds table in {path}")
+    return kinds
+
+
+def parse_blocks(text, prefix):
+    """Blocks that start '### <prefix>-NNNN · kind · subject' followed by '- key: value' lines."""
+    items = []
+    for m in re.finditer(r"^### (" + prefix + r"-\d+)\s*·\s*([^·\n]+?)\s*(?:·\s*(.+?))?\s*$(.*?)(?=^### |\Z)", text, re.S | re.M):
+        fields = {}
+        for line in m.group(4).splitlines():
+            f = re.match(r"^- ([a-z][a-z ]*):\s*(.*)$", line.strip())
+            if f:
+                fields[f.group(1).strip()] = f.group(2).strip()
+        items.append({"id": m.group(1), "kind": m.group(2).strip(), "subject": (m.group(3) or "").strip(), "fields": fields,
+                      "line": text.count("\n", 0, m.start()) + 1})
+    return items
+
+
+def parse_log(text):
+    rows = []
+    for n, line in enumerate(text.splitlines(), 1):
+        cells = [c.strip() for c in line.split("|")]
+        if len(cells) < 6 or not _date(cells[0]):
+            continue
+        rows.append({"date": _date(cells[0]), "id": cells[1], "kind": cells[2], "rung": cells[3].lower(),
+                     "proposed": cells[4], "disposition": cells[5].lower(),
+                     "edit": cells[6] if len(cells) > 6 else "", "source": cells[7] if len(cells) > 7 else "", "line": n})
+    return rows
+
+
+def parse_rungs(text):
+    """{kind: (rung, since)} from the last row for each kind."""
+    current = {}
+    for row in text.splitlines():
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        if len(cells) >= 3 and cells[1].lower() in RUNGS and _date(cells[2]):
+            current[cells[0].strip("`")] = (cells[1].lower(), _date(cells[2]))
+    return current
+
+
+def _read(path):
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def cmd_init(args):
+    local = Path(args.dir)
+    local.mkdir(parents=True, exist_ok=True)
+    today = args.today
+    kinds = load_kinds()
+    files = {
+        "queue.md": "# Queue\n\ncursor: none\n\n",
+        "log.md": "# Log\n\ndate | item | kind | rung | proposed | disposition | edit | source\n\n",
+        "rules.md": "# Rules\n\n",
+        "bridges.md": "# Bridges\n\n",
+        "rungs.md": "# Rungs\n\n| Kind | Rung | Since | Why |\n|---|---|---|---|\n"
+                    + "".join(f"| {k} | {start} | {today} | start |\n" for k, (start, _) in kinds.items()),
+    }
+    for name, body in files.items():
+        path = local / name
+        if path.exists():
+            print(f"kept {path}")
+        else:
+            path.write_text(body, encoding="utf-8")
+            print(f"wrote {path}")
+    return 0
+
+
+def check_items(items, kinds, rungs):
+    problems = []
+    for it in items:
+        f, kind, where = it["fields"], it["kind"], f"{it['id']} (line {it['line']})"
+        if f.get("status", "open") not in OPEN_STATUSES:
+            continue
+        if kind not in kinds:
+            problems.append(f"{where}: unknown kind {kind!r}")
+            continue
+        for key in REQUIRED:
+            if key not in f:
+                problems.append(f"{where}: missing {key}")
+        if kind == "setup" and "done when" not in f:
+            problems.append(f"{where}: setup item without 'done when'")
+        rung = f.get("rung", "").lower()
+        if rung and rung not in RUNGS:
+            problems.append(f"{where}: rung {rung!r} is not one of {', '.join(RUNGS)}")
+            continue
+        ceiling = kinds[kind][1]
+        current = rungs.get(kind, (kinds[kind][0], None))[0]
+        if rung and RUNGS.index(rung) > RUNGS.index(ceiling):
+            problems.append(f"{where}: rung {rung} is above the {kind} ceiling ({ceiling})")
+        elif rung and RUNGS.index(rung) > RUNGS.index(current):
+            problems.append(f"{where}: rung {rung} is above the current {kind} rung ({current})")
+        if f.get("sensitive", "no").lower() not in ("no", "") and rung and rung != "propose":
+            problems.append(f"{where}: sensitive item must run at propose, not {rung}")
+    return problems
+
+
+def _key(it):
+    f = it["fields"]
+    due = _date(f.get("due")) or _dt.date.max
+    return (BANDS.get(it["kind"], 6), due, int(it["id"].split("-")[1]))
+
+
+def cmd_queue(args):
+    local = Path(args.dir)
+    qpath = local / "queue.md"
+    if not qpath.exists():
+        print("cx queue: no local/queue.md. Run scripts/cx init, or the setup skill.", file=sys.stderr)
+        return 2
+    text = qpath.read_text(encoding="utf-8")
+    kinds = load_kinds()
+    rungs = parse_rungs(_read(local / "rungs.md"))
+    items = parse_blocks(text, "Q")
+    problems = check_items(items, kinds, rungs)
+    live = [it for it in items if it["fields"].get("status", "open") in OPEN_STATUSES]
+
+    stale = []
+    for it in live:
+        f = it["fields"]
+        last = _date(f.get("touched")) or _date(f.get("opened"))
+        if f.get("status") == "open" and last and (args.today - last).days >= EXPIRE_DAYS:
+            stale.append(it)
+    if args.expire and args.apply and stale:
+        log_lines = []
+        for it in stale:
+            pattern = re.compile(r"(^### " + re.escape(it["id"]) + r"\b(?:(?!^### ).)*?^- status:\s*)open", re.S | re.M)
+            text = pattern.sub(r"\1expired", text, count=1)
+            log_lines.append(f"{args.today} | {it['id']} | {it['kind']} | {it['fields'].get('rung', '')} | "
+                             f"{it['fields'].get('why', '')} | expired | untouched {EXPIRE_DAYS} days | {it['fields'].get('source', '')}\n")
+        qpath.write_text(text, encoding="utf-8")
+        with open(local / "log.md", "a", encoding="utf-8") as log:
+            log.writelines(log_lines)
+        stale_ids = {it["id"] for it in stale}
+        live = [it for it in live if it["id"] not in stale_ids]
+
+    live.sort(key=_key)
+    open_items = [it for it in live if it["fields"].get("status", "open") == "open"]
+    blocked = [it for it in live if it["fields"].get("status") == "blocked"]
+    for it in open_items[: args.top or None]:
+        f = it["fields"]
+        print(f"{it['id']}  band {BANDS.get(it['kind'], 6)}  {it['kind']:<13} {it['subject'][:24]:<24}  "
+              f"[{f.get('rung', '?')}]  due {f.get('due', '-')}  {f.get('why', '')[:70]}")
+    print(f"{len(open_items)} open, {len(blocked)} blocked", file=sys.stderr)
+    if stale:
+        verb = "expired" if (args.expire and args.apply) else "would expire (use --expire --apply)"
+        print(f"{verb}: {', '.join(it['id'] for it in stale)}", file=sys.stderr)
+    for p in problems:
+        print(f"problem: {p}", file=sys.stderr)
+    return 1 if problems else 0
+
+
+def report(local, today, kinds):
+    rows = parse_log(_read(local / "log.md"))
+    rungs = parse_rungs(_read(local / "rungs.md"))
+    week = [r for r in rows if (today - r["date"]).days < 7]
+    out = [f"## Queue report, week to {today}", ""]
+
+    out += ["| Kind | Rung | Items | Accepted unedited | Edited | Rejected or reversed |", "|---|---|---|---|---|---|"]
+    closed = [r for r in week if r["disposition"] not in ("deferred",)]
+    for kind in sorted({r["kind"] for r in week}):
+        kr = [r for r in closed if r["kind"] == kind]
+        rung = rungs.get(kind, (kinds.get(kind, ("?",))[0], None))[0]
+        out.append(f"| {kind} | {rung} | {len(kr)} | {sum(r['disposition'] in CLEAN for r in kr)} | "
+                   f"{sum(r['disposition'] == 'edited' for r in kr)} | "
+                   f"{sum(r['disposition'] in ('rejected', 'reversed') for r in kr)} |")
+    judged = [r for r in closed if r["disposition"] in CLEAN + ("edited", "rejected", "reversed")]
+    pct = lambda n, d: f"{round(100 * n / d)}%" if d else "n/a"
+    out += ["",
+            f"- Closed without an operator edit: {pct(sum(r['disposition'] in CLEAN for r in judged), len(judged))} of {len(judged)}",
+            f"- Handled at act-with-notice or above: {pct(sum(r['rung'] in ('notice', 'silent') for r in judged), len(judged))}"]
+    q = parse_blocks(_read(local / "queue.md"), "Q")
+    live = [it for it in q if it["fields"].get("status", "open") == "open"]
+    if live:
+        oldest = min(live, key=lambda it: _date(it["fields"].get("opened")) or today)
+        out.append(f"- Open: {len(live)}; oldest {oldest['id']} ({oldest['fields'].get('opened', '?')})")
+    else:
+        out.append("- Open: 0")
+
+    promotions, demotions = [], []
+    for kind, (start, ceiling) in kinds.items():
+        rung, since = rungs.get(kind, (start, None))
+        at_rung = [r for r in rows if r["kind"] == kind and r["rung"] == rung and (since is None or r["date"] >= since)
+                   and r["disposition"] not in ("deferred", "dropped", "expired")]
+        bad = [r for r in at_rung if r["disposition"] in ("rejected", "reversed")]
+        if bad:
+            demotions.append(f"- {kind}: {len(bad)} rejected or reversed at {rung} since {since} "
+                             f"({', '.join(r['id'] for r in bad[-3:])}). Drop one rung if not already done.")
+            continue
+        last = at_rung[-PROMOTION_RUN:]
+        if RUNGS.index(rung) >= RUNGS.index(ceiling):
+            continue
+        if len(last) == PROMOTION_RUN and all(r["disposition"] in CLEAN for r in last) \
+                and since is not None and (today - since).days >= PROMOTION_DAYS:
+            nxt = RUNGS[RUNGS.index(rung) + 1]
+            promotions.append(f"- {kind}: {rung} -> {nxt}. Last {PROMOTION_RUN} clean, {last[0]['id']} to {last[-1]['id']}; "
+                              f"at {rung} since {since}.")
+    out += ["", "### Ready for the next rung", *(promotions or ["- None."])]
+    out += ["", "### Rungs that should have dropped", *(demotions or ["- None."])]
+
+    edits = {}
+    for r in rows:
+        if r["disposition"] == "edited" and r["edit"] and (today - r["date"]).days < RULE_DAYS:
+            edits.setdefault(r["kind"], []).append(r)
+    rule_lines = [f"- {k}: " + "; ".join(f"{r['id']} \"{r['edit']}\"" for r in rs)
+                  for k, rs in sorted(edits.items()) if len(rs) >= RULE_EDITS]
+    out += ["", f"### Edits to judge as a rule ({RULE_EDITS}+ in {RULE_DAYS} days)", *(rule_lines or ["- None."])]
+
+    producers = []
+    for field in ("kind", "source"):
+        groups = {}
+        for r in rows:
+            if r[field]:
+                groups.setdefault(r[field], []).append(r)
+        for name, rs in sorted(groups.items()):
+            tail = rs[-PRODUCER_DROPS:]
+            if len(tail) == PRODUCER_DROPS and all(r["disposition"] in ("dropped", "expired") for r in tail):
+                producers.append(f"- {field} {name}: last {PRODUCER_DROPS} dropped or expired ({tail[0]['id']} to {tail[-1]['id']})")
+    out += ["", "### Producers to narrow", *(producers or ["- None."])]
+
+    bridges = []
+    for b in parse_blocks(_read(local / "bridges.md"), "B"):
+        f = b["fields"]
+        base, now = (re.search(r"-?\d+(\.\d+)?", f.get(k, "")) for k in ("baseline", "now"))
+        moved = _date(f.get("last moved")) or _date(f.get("baseline"))
+        change = ""
+        if base and now:
+            b0, n0 = float(base.group(0)), float(now.group(0))
+            change = f"{b0:g} -> {n0:g}" + (f" ({round(100 * (n0 - b0) / b0)}%)" if b0 else "")
+        flag = " STUCK" if moved and (today - moved).days >= BRIDGE_STALE_DAYS else ""
+        flag += " ROSE" if base and now and float(now.group(0)) > float(base.group(0)) else ""
+        bridges.append(f"- {b['id']} {b['subject'] or b['kind']}: {change or 'no numbers'}; last moved {moved or '?'}{flag}")
+    out += ["", "### Bridges", *(bridges or ["- None."])]
+    return "\n".join(out) + "\n"
+
+
+def cmd_report(args):
+    sys.stdout.write(report(Path(args.dir), args.today, load_kinds()))
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="cx", description="Helpers for the agentic CX manual.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -231,10 +517,21 @@ def main(argv=None):
     check.add_argument("--strict", action="store_true", help="treat warnings as errors")
     check.add_argument("--quiet", action="store_true", help="no summary line")
     check.add_argument("--lexicon", help="path to a different lexicon file")
+    today = lambda s: _dt.date.fromisoformat(s)
+    for name, helptext in (("init", "create the files in local/ that do not exist yet"),
+                           ("queue", "check queue items and print them in triage order"),
+                           ("report", "the Friday numbers, promotions, rules, producers, and bridges")):
+        p = sub.add_parser(name, help=helptext)
+        p.add_argument("--dir", default=str(LOCAL), help="the local/ folder (default: repo local/)")
+        p.add_argument("--today", type=today, default=_dt.date.today(), help="YYYY-MM-DD, for testing")
+        if name == "queue":
+            p.add_argument("--top", type=int, default=0, help="print only the first N items")
+            p.add_argument("--expire", action="store_true", help="find items untouched for 14 days")
+            p.add_argument("--apply", action="store_true", help="with --expire, mark them expired and log them")
     args = parser.parse_args(argv)
     if args.command == "check":
         return cmd_check(args)
-    return 2
+    return {"init": cmd_init, "queue": cmd_queue, "report": cmd_report}[args.command](args)
 
 
 if __name__ == "__main__":

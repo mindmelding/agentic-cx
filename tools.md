@@ -1,5 +1,7 @@
 # Tools
 
+Keep your stack. This page names what an agent product needs the stack to do, so setup can see which parts you already have and fill only the blanks.
+
 Tools are capabilities. A product name appears twice: as a signal a scan can recognize, and as the default when a company has nothing in that slot. The pages under `responsibilities/` stay vendor-neutral. Adaptation lives in `stack.md`, which the skill writes locally and which is gitignored.
 
 ## How a scan decides
@@ -63,7 +65,7 @@ A capability is **found** when a signal matches. It is **partial** when a nearby
 |---|---|---|---|
 | Intake | Read new mail, resolutions, and CX findings since a cursor | A mailbox, a help desk, Moonbase or another account stream | The mailbox the team already answers, read from a saved cursor |
 | Cluster | Turn repeat reports into one item with a count | A dedupe key, a label, a human merging threads | The queue itself. Same flaw, one row |
-| Triage queue | Hold each item until a person marks pass or hold | A list, a board column, a local file | A local queue, gitignored, next to `stack.md` |
+| Triage queue | Hold each item until a person marks pass or hold | A list, a board column, a local file | The team's queue, `local/queue.md`. See [queue](queue.md) |
 | Issue adapter | File the digest into the tracker product work already uses | Linear, Jira, GitHub issues | [Linear](https://linear.app). Use GitHub or Jira instead when that is where issues already live |
 
 ### Forensics

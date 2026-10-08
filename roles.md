@@ -35,7 +35,7 @@ A floor that spends its freed time answering what the agent could have answered 
 
 | Team | Who holds what |
 |---|---|
-| **One person** | Everything, on the [routines](routines.md). Open, floor and triage, close. Onboarding is the stall list. Value is one story per renewal. Forensics is the severity column on the ledger. Product holds the ledger and the rung mechanism. |
+| **One person** | Everything, on the [routines](routines.md). Open, triage, close, with the queue as the whole to-do list. Onboarding is the `stall` items. Value is one story per renewal. Forensics is the severity column on the ledger. Product holds the ledger and the rung mechanism. |
 | **Three** | A head of CX who holds value, change, and the boundary with product. A floor lead who holds the floor, onboarding step-ins, and voice. A CX engineer who holds context, documentation, and forensics. |
 | **Eight or more** | Split the floor by segment, not by tier. Onboarding gets an owner when stalls exceed what the floor can reach in a day. Documentation and forensics get owners when there are more classes than one person can keep verified each week. Each responsibility has one named owner, even when several people work it. |
 

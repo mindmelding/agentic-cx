@@ -1,6 +1,6 @@
 ---
 name: cx-floor
-description: During the day, when a customer is in front of you. Read their file, decide whether the agent or a person holds the moment, draft from the floor canon, and capture a fact or a flaw if the moment produced one. Use for a reply, a bug, a request, a renewal, a silence, or a stalled onboarding. Not for the morning board or the evening note.
+description: A customer moment. Read their file, decide who holds it, draft from the floor canon at the item's rung, and turn any fact or flaw into a queue item. Triage sends moments here; use it directly when a customer pings you.
 ---
 
 # Floor
@@ -18,9 +18,9 @@ The canon is in [`floor/`](../../floor/README.md), in this repo.
 5. Draft from that playbook. Anything sensitive (money, access, deletion, personal data, anything that leaves the building) waits for an explicit yes. See [`floor/guardrails/authority.md`](../../floor/guardrails/authority.md).
 6. If the file supports a gesture in [`floor/delight/catalog.md`](../../floor/delight/catalog.md), and delight history does not already contain it, offer it after the reply is true. Thin evidence means skip it.
 
-## Going first
+## From the queue
 
-When no one is waiting, work the lists before the inbox: the stall list from [onboarding](../../responsibilities/onboarding.md), then accounts that went quiet (`silence`), then a first clean autonomous run worth telling the customer about. One moment at a time, the same way.
+When [triage](../triage/SKILL.md) sends a `reply`, `reply-person`, `stall`, `silence`, or `gesture` item here, the item's rung decides whether you draft or send. When a customer pings you directly instead, handle it here, then add the item to `local/queue.md` already closed and log it, so the record stays whole.
 
 ## Record the moment
 
@@ -30,9 +30,9 @@ The playbook slug is part of the action. Record who held it, `agent` or `person`
 
 Do not wait for close.
 
-- A fact about them goes to context, the same way [open](../open/SKILL.md) writes a fact.
-- A bug, a feature request, or our mistake also becomes or updates one row in `voice-queue.md`. The reply can still go out. The flaw is not only a reply.
-- An edit a person made to the agent's draft is a lesson. If it would change the next draft, one line in the day note. If the agent got it wrong in a way a test could catch, propose an eval case.
+- A fact about them becomes a `fact` item in `local/queue.md`.
+- A bug, a feature request, or our mistake also becomes or updates a `flaw` item. The reply can still go out. The flaw is not only a reply.
+- An edit a person made to the agent's draft is logged in `local/log.md` with what changed. Close turns repeated edits into rules. If the agent got it wrong in a way a test could catch, propose an eval case.
 - A phrase they used, or a reply you would not have written the same way twice, gets one line in today's day note under `local/learnings/days/`. Create the file from the sections in [close](../close/SKILL.md) if it is not there yet. Include the moment slug.
 
-If the moment needs a pass, a hold, or a documentation call, say so and stop. That is [triage](../triage/SKILL.md), not this skill.
+If the moment needs a pass, a hold, or a documentation call, add it to the queue and stop. That is [triage](../triage/SKILL.md).

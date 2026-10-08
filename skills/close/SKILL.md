@@ -1,15 +1,15 @@
 ---
 name: cx-close
-description: End of day. Write the day note, name what is still open, and on Friday promote at most a few of those notes into learnings. Use once at the end of the day. Do not start new work.
+description: End of day. Write the day note and carry over what is open. On Friday, read the week's log, propose rung promotions, propose rules from repeated edits, narrow producers that only make dropped items, and write the autonomy report. Use once at the end of the day.
 ---
 
 # Close
 
-Run this at the end of the day. Capture is cheap. Judgment waits for Friday, except when a decision would be costly to forget overnight.
+Capture is cheap. Judgment waits for Friday. The queue, log, and rules are defined in [`queue.md`](../../queue.md).
 
-## The day note
+## Every day
 
-Write or finish `local/learnings/days/YYYY-MM-DD.md`. Five sections, one or two lines each, with a pointer (a thread, a queue row, a commit). Leave a section empty rather than inventing an entry.
+Write or finish `local/learnings/days/YYYY-MM-DD.md`. Five sections, one or two lines each, with item numbers as pointers. Leave a section empty rather than inventing an entry.
 
 ```markdown
 # YYYY-MM-DD
@@ -21,33 +21,20 @@ Write or finish `local/learnings/days/YYYY-MM-DD.md`. Five sections, one or two 
 ## Delight
 ```
 
-Add, under those, what is still open tomorrow: voice rows without a pass or hold, and specs still unverified. That list is the start of tomorrow's open.
+Under them: how many items closed today, how many are open, and the top three for tomorrow. Run `scripts/cx queue --expire --apply` to expire items untouched for 14 days.
 
-## A decision that should not wait
-
-If today included a pass, a hold, a `never` line, or a "no documentation" call that a new teammate would not guess, write one learning now. Do not leave it only in the day note.
-
-Create `local/learnings/YYYY-MM-DD-short-slug.md`:
-
-```yaml
----
-date: YYYY-MM-DD
-responsibility: onboarding | context | change | value | documentation | forensics | voice | floor
-kind: fact | flaw | boundary | rung | doc
-summary: one sentence
-decision: what was decided
-evidence: path, link, or quote
----
-```
-
-Add one row to `local/learnings/index.md`, newest first. Columns: date, responsibility, summary, file.
+If today held a decision a new teammate would not guess (a pass, a hold, a `never` line, a "no documentation" call), write a learning now in `local/learnings/YYYY-MM-DD-short-slug.md`, in the shape in [learnings](../../learnings/README.md), and add a row to `local/learnings/index.md`.
 
 ## Friday
 
-After the day note, do the weekly pass. Cap it at five:
+Run `scripts/cx report`. It does the counting: the week's numbers, the kinds that clear the promotion bar, rungs that should have dropped, kinds with enough edits to judge as a rule, producers with five drops in a row, and bridges that stopped moving. Work from it, not from reading the log by eye. Then, in this order, asking before each change:
 
-1. Specs still unverified.
-2. Voice holds whose count went up.
-3. Day notes from the week that should become a learning, or should be discarded.
+1. **Promotions.** For each kind that clears the bar in [`queue.md`](../../queue.md#promotion), propose the next rung: the kind, the rung now and next, the last 20 lines behind it, what would change, and how to undo it. On a yes, write it to `local/rungs.md`. Never above the ceiling.
+2. **Rules.** The report lists kinds with three edits in 30 days. Where they are the same edit, propose a rule with its evidence. On a yes, add it to `local/rules.md` and write it where the next draft will read it.
+3. **Producers.** Where five items in a row from one source or kind were dropped, propose narrowing that producer. On a yes, it becomes a rule.
+4. **Expiring rules.** A rule past its expiry becomes an `upkeep` item.
+5. **Bridges.** Flag any bridge whose number has not moved in four weeks, and propose retiring any whose exit is met. See [bridges](../../bridges.md#tracking-them-down).
+6. **Learnings.** Promote or discard the week's day notes. At most five.
+7. **Report.** Paste the `scripts/cx report` output into the day note, with one line on what you would change next week.
 
-Ask before promoting a note into a learning file. Discard in one line on the day note. Do not rewrite the manual. Do not file an issue from here. Filing is triage.
+Do not rewrite the manual. Do not file an issue from here. Filing is triage.

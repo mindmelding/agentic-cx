@@ -126,15 +126,28 @@ The first loop names one [action class](../action-class.md) to instrument, using
 
 On a re-run, keep the old assessment and write a new dated one. The point is the movement.
 
+**`local/queue.md`, the setup plan.** Turn the gaps into `setup` items, in the shape in [`../queue.md`](../queue.md#an-item), ordered so each one unblocks the next. Ten to twenty items, each small enough to finish in one sitting, each with a `done when` line. Typical items:
+
+- connect the context store, the inbox, or the tracker named in `stack.md`
+- start sampling 20 actions a week for one account, if the ledger is below level 2
+- write the first action class spec, with its `never` lines and `sources`
+- ask product for the five ledger columns, as a `flaw` item to pass
+- define the stall signals and the first-run question
+- fill the overlay (step 7)
+
+Any area that scored 1, the old way, also gets a bridge in `local/bridges.md`, in the shape in [`../bridges.md`](../bridges.md#a-bridge): what it keeps, what it waits on, the number that should fall, its baseline today, and its exit. The team keeps the old thing running, counted, while the new loop is built beside it.
+
+Work that product owns goes in as `blocked`, linked to the item that asks for it, so the plan shows the whole path. Run `scripts/cx init` first: it creates `local/queue.md`, `local/log.md`, `local/rules.md`, `local/bridges.md`, and `local/rungs.md` with every kind at its starting rung. Run `scripts/cx queue` after writing the plan, and fix anything it reports.
+
 ## 6. Read it back
 
 In paragraphs, the way a colleague would say it. Not a table dump.
 
 1. Where they stand, in two sentences.
 2. The three biggest gaps, each with why it matters for an agent product and the smallest step to close it.
-3. The first loop.
+3. The first loop, how many setup items are in the queue, and the bridges, with the number each one starts at.
 
-Then ask one question: "Start with the first loop, or set up the floor first?"
+Then ask one question: "Start working the plan now, or set up the floor first?" Working the plan is [triage](../skills/triage/SKILL.md). Setup items are worked the same way as every day's work after them.
 
 ## 7. Set up the floor (when they say so)
 
@@ -162,7 +175,7 @@ This configures the agent that drafts customer replies, and fills the company ov
 
 Write after every answer, and confirm what was saved in five words or fewer. A half-finished interview is still progress.
 
-**End with work, not "ready."** Read the window through the customer's file and come back with three to five things that need doing: overdue promises, threads waiting on us, onboarding stalls, accounts that went quiet, a first clean autonomous run worth telling a customer about. Each with a draft and the file it came from. Add one gesture from [`../floor/delight/catalog.md`](../floor/delight/catalog.md) if the record supports one. Everything is a draft. Ask: "Which one first?" Draft that one in full. Whatever they change is the first line of today's day note.
+**End with work, not "ready."** Read the window through the customer's file and add three to five items to the queue for what needs doing: overdue promises, threads waiting on us, onboarding stalls, accounts that went quiet, a first clean autonomous run worth telling a customer about. Each with a draft and the file it came from. Add one gesture from [`../floor/delight/catalog.md`](../floor/delight/catalog.md) if the record supports one. Everything is a draft. Ask: "Which one first?" Draft that one in full. Whatever they change is the first line of today's day note.
 
 ## After
 

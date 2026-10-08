@@ -1,23 +1,34 @@
 ---
 name: cx-open
-description: Start of day. Read what is new, split facts from product flaws, and leave a short board of what to handle today. Use once each morning. Do not file anything.
+description: Start of day. Read what is new since the last open, turn each thing into a queue item, carry out anything whose kind runs on its own, and post the top five. Use once each morning, by a person or on a schedule.
 ---
 
 # Open
 
-Run this at the start of the day. It replaces a second morning meeting.
+This fills the queue. [Triage](../triage/SKILL.md) works it. The queue, kinds, and rungs are in [`queue.md`](../../queue.md).
 
-Read [`routines.md`](../../routines.md), [`responsibilities/context.md`](../../responsibilities/context.md), and [`responsibilities/voice.md`](../../responsibilities/voice.md). Use `stack.md` when it exists.
+Read `stack.md`, `local/queue.md`, `local/rungs.md`, `local/rules.md`, `local/bridges.md`, yesterday's day note in `local/learnings/days/`, and `local/learnings/index.md`.
 
 ## Do this
 
-1. Read yesterday's day note if it exists: `local/learnings/days/`. Read `local/learnings/index.md` and `voice-queue.md` so a repeat is not a new item.
-2. Read only what is new since the cursor at the top of `voice-queue.md`. Mail, a resolution or workaround, and a flaw from the work.
-3. For each thing, choose one:
-   - **Context.** A fact about the customer. Write it with an author, a time, and a source into the store `stack.md` names. If there is no store yet, append it to `context-inbox.md`.
-   - **Voice.** A flaw in the product. Update one row in `voice-queue.md` using the item fields on the voice page. The same flaw increments the count and adds a quote.
-   - **Skip.** Say so in one line.
-4. Save the cursor at the top of `voice-queue.md`.
-5. Post the board, and stop. At most five lines: what arrived, what is still open (holds, unverified specs, stalled onboardings with no person or skip), and which of the two daytime skills to use first (`floor` if someone is waiting, `triage` if a decision is waiting). Do not file an issue. Do not edit a spec.
+1. **Read what is new** since the cursor at the top of `local/queue.md`, from the sources in `stack.md`:
+   - customer mail and threads waiting on us,
+   - the ledger: reversals, edit distance rising, stall signals, silences, classes that meet the promotion bar,
+   - commits that touched a spec's `sources`,
+   - incidents graded by forensics.
+2. **Make items.** One per thing, with the fields in [`queue.md`](../../queue.md#an-item). A repeat of an open item updates it (a flaw's count, a new quote) rather than adding another. Apply the producer rules in `local/rules.md`: a muted source makes nothing.
+3. **Listen for bridges.** When the same question has reached the team three times in 30 days and neither the agent nor the product can answer it, add a `bridge` item proposing the smallest thing that answers it today, and a `flaw` item asking product to make it unnecessary. See [bridges](../../bridges.md#where-bridges-come-from).
+4. **Add today's cadence items.** On their day, the weekly and quarterly loops from the responsibility pages become `check`, `value`, or `upkeep` items: the boundary check, the idle-fact list, rereading holds, the renewal story for an account in motion, and each bridge's weekly review from `local/bridges.md`.
+5. **Expire.** Run `scripts/cx queue --expire --apply`.
+6. **Carry out what runs on its own.** Items whose kind sits at act-with-notice or act-silently in `local/rungs.md` are done now, never a sensitive one. Log each in `local/log.md` with disposition `done`.
+7. **Save the cursor.**
+8. **Post the board** from `scripts/cx queue --top 5`. At most eight lines:
+   - what was done on its own, with item numbers and how to undo,
+   - the top five open items,
+   - how many are blocked, and the oldest open item.
 
-`voice-queue.md`, `context-inbox.md`, and `local/` stay on the machine.
+Then stop. Working the queue is triage.
+
+## On a schedule
+
+When open runs headless, write the board to the top of today's day note instead of posting it. Do nothing a person has to see first.
