@@ -11,7 +11,7 @@ git clone https://github.com/mindmelding/agentic-cx.git
 cd agentic-cx
 ```
 
-Your company's material never lands in tracked files. The setup skill writes it to `stack.md`, `voice-queue.md`, `context-inbox.md`, and `local/`, which are gitignored. A public clone is fine. If you want your notes versioned, keep `local/` in a separate private repo.
+Your company's material never lands in tracked files. The setup skill writes it to `stack.md` and `local/`, which are gitignored. A public clone is fine. If you want your notes versioned, keep `local/` in a separate private repo.
 
 **2. Open your agent in the repo.** Each host finds the manual through a file it already reads:
 
@@ -22,7 +22,7 @@ Your company's material never lands in tracked files. The setup skill writes it 
 | Cursor | `AGENTS.md` | "Run the setup skill." | [cursor.md](cursor.md) |
 | Gemini CLI, Copilot, Windsurf, and others | `AGENTS.md`, `GEMINI.md`, or a rules file you point at `AGENTS.md` | "Run the setup skill." | [other-hosts.md](other-hosts.md) |
 
-**3. Run setup.** It asks permission, reads past chats and connected tools, interviews you on the gaps, and leaves a gap report and a first loop. About twenty minutes. Step 7 configures the floor: who you escalate to, what the agent may spend, and your own replies as examples.
+**3. Run setup.** It asks permission, reads past chats and connected tools, interviews you on the gaps, and leaves a gap report and a setup plan in the queue. Then `/cx-triage` works the plan, and every day after it. About twenty minutes. Step 7 configures the floor: who you escalate to, what the agent may spend, and your own replies as examples.
 
 ## Connect your tools
 
@@ -51,4 +51,4 @@ Codex: `codex exec "Run skills/open/SKILL.md"`. Give a scheduled run read access
 
 ## Moving to another machine or agent
 
-Copy `local/`, `stack.md`, `voice-queue.md`, and `context-inbox.md` into a fresh clone. That is everything the manual knows about your company.
+Copy `local/` and `stack.md` into a fresh clone. The queue, the log, the learned rules, and the rungs your team has earned all travel with `local/`. That is everything the manual knows about your company.

@@ -1,32 +1,51 @@
 ---
 name: cx-triage
-description: During the day, decide pass or hold on a voice item, and no-page, promise-line, or guide on a flagged spec. File only after an explicit yes. Use when open or floor has left a decision waiting, not as a morning scan.
+description: Work the queue. Take the top item, load its handler, do or draft the work at the item's rung, ask at most one decision, log what the operator did, and move to the next. Use for setup and for every workday after it. When a customer pings directly, floor is faster.
 ---
 
 # Triage
 
-Read [`responsibilities/voice.md`](../../responsibilities/voice.md) and [`responsibilities/documentation.md`](../../responsibilities/documentation.md). Use the adapter in `stack.md` when a pass is accepted. One item at a time.
+The whole day runs through this skill. The queue, the kinds, the rungs, and the log are defined in [`queue.md`](../../queue.md). Read it once per session.
 
-## Voice
+## Start
 
-For each open row in `voice-queue.md`:
+1. Read `local/queue.md`, `local/rungs.md`, and `local/rules.md`. If the queue does not exist, say so and offer [open](../open/SKILL.md), or [setup](../../skill/SKILL.md) if there is no `stack.md`.
+2. Sort open items by band, then due date, then age. Skip `blocked` items, but say how many there are.
 
-1. Show the flaw, the quote, the count, the resolution, and whether an issue already exists.
+## For each item
+
+1. **Show it.** One line: the item number, kind, account, and why now.
+2. **Load the handler** named on the item, and the rules in `local/rules.md` that apply to this kind.
+3. **Work at the item's rung.** The rung is the lower of the kind's rung in `local/rungs.md` and its ceiling in [`queue.md`](../../queue.md#kinds). A sensitive item is always propose.
+   - **Propose:** say what you would do and why, in two or three lines. Ask yes or no.
+   - **Draft:** prepare the whole thing (the reply, the fact, the issue, the disposition). Show it. Ask: send as is, edit, or reject.
+   - **Act with notice or silently:** do it, and say in one line what you did and how to undo it.
+4. **Carry it out** on a yes, or with the operator's edit. Anything sent outside the company follows [`floor/guardrails/authority.md`](../../floor/guardrails/authority.md).
+5. **Log it.** One line in `local/log.md`, in the format in [`queue.md`](../../queue.md#the-log). If the operator edited, write what changed in one line. That line is what the system learns from.
+6. **Demote if it was wrong.** A rejection because the work was wrong, or a reversal, drops the kind one rung in `local/rungs.md`. Say so in one line.
+7. **Capture.** A new fact, flaw, or follow-up the item revealed becomes a new item, not a side note.
+8. **Next.**
+
+Stop when the queue is empty, when the operator says stop, or after 25 items. Then say what is left at the top.
+
+## By kind
+
+Most kinds follow their handler page. Two need more here.
+
+### `flaw`
+
+1. Show the flaw, the quote, the count, the resolution, and whether an issue already exists in the tracker `stack.md` names.
 2. Ask: pass, or hold.
-3. On hold, write the reason on the row. Leave it in the queue.
-4. On pass, show the issue in the voice page's shape. File it only after the person says yes. If an issue already covers it, comment with the new quote and the new count instead of opening another.
-5. Mark the row passed, with the link.
+3. On hold, write the reason on the item and set it `blocked` until its count rises.
+4. On pass, show the issue in the shape on the [voice](../../responsibilities/voice.md) page. File it only after a yes. If an issue already covers it, comment with the new quote and count instead.
+5. Later evidence on a passed flaw becomes a `flaw-evidence` item, which can climb to act silently.
 
-A flaw that has never been passed does not get filed on its own. New evidence on a flaw already passed can be added, and the person is told.
+### `doc-decision`
 
-## Documentation
+1. Show the diff beside the spec's current `may` and `never`.
+2. Ask for one disposition from the [documentation](../../responsibilities/documentation.md) page: no page, a promise line, a guide, an update, or a removal.
+3. A change to a `never` line is sensitive. It always waits for a yes.
 
-When a spec is unverified because a commit touched its `sources`:
+## Before you finish
 
-1. Show the diff beside the current `may` and `never`.
-2. Ask for one disposition: no page, because the product reveals the behavior; a line on the promise page; or a guide, because a person still has to walk a sequence before the product can.
-3. Apply the disposition only after a yes. A change to a `never` line always waits for that yes.
-
-## Then
-
-If the decision would surprise someone who was not here, append one line to today's day note (`local/learnings/days/`) and say that close should promote it. If this is the last thing you will do today, write the learning file now, in the shape [close](../close/SKILL.md) uses.
+If a decision today would surprise someone who was not here, add one line to today's day note in `local/learnings/days/`, and say close should look at it.

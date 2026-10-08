@@ -40,6 +40,7 @@ The manual uses these words the same way on every page.
 - [`metrics.md`](metrics.md). The scorecard, and which old metric each number replaces.
 - [`roles.md`](roles.md). Support, success, onboarding, and documentation, and what each becomes.
 - [`boundary.md`](boundary.md). What CX builds, what product builds, and where work crosses.
+- [`queue.md`](queue.md). The one queue the team works, and how its own work earns autonomy.
 - [`pricing.md`](pricing.md). How the billable unit meets the rung profile, and the interview to find out.
 - [`agent-customers.md`](agent-customers.md). When the thing calling your product is the customer's agent.
 
@@ -76,7 +77,7 @@ Who holds each one, and how that changes with team size, is in [roles](roles.md)
 
 ## The day
 
-Four skills, plus a monthly [refresh](skills/refresh/SKILL.md) of the fast-moving pages: [open](skills/open/SKILL.md) when you start, [floor](skills/floor/SKILL.md) and [triage](skills/triage/SKILL.md) while the work is happening, [close](skills/close/SKILL.md) when you stop. The schedule is [`routines.md`](routines.md). What the day teaches stays in `local/learnings/`, gitignored, so it can move to another agent without publishing a customer's words. The shape of those files is in [`learnings/`](learnings/README.md).
+One queue holds everything the team has to do, from the setup plan to today's customers. [Open](skills/open/SKILL.md) fills it each morning, [triage](skills/triage/SKILL.md) works it top first, and [close](skills/close/SKILL.md) carries it over. Every decision you make is logged, and on Friday the log earns kinds of work their next rung: the team gets more autonomous the same way the manual asks the product to. How that works is in [`queue.md`](queue.md). The schedule is [`routines.md`](routines.md). What the day teaches stays in `local/learnings/`, gitignored, so it can move to another agent without publishing a customer's words. The shape of those files is in [`learnings/`](learnings/README.md).
 
 ## The floor
 
@@ -84,13 +85,13 @@ When a customer is in front of the team, [`floor/`](floor/README.md) is how they
 
 ## Setup
 
-A setup skill in [`skill/SKILL.md`](skill/SKILL.md) interviews the operator. With permission, it reads past chats, connected tools, and the product repo, scores each responsibility against where the team is today, and writes a gap report and a local `stack.md`. Run it once to start, and again each quarter.
+A setup skill in [`skill/SKILL.md`](skill/SKILL.md) interviews the operator. With permission, it reads past chats, connected tools, and the product repo, scores each responsibility against where the team is today, and writes a gap report, a local `stack.md`, and a setup plan as items in the queue. Run it once to start, and again each quarter.
 
 ## Cadence
 
 The detail lives on each responsibility page. Across the team:
 
-- **Daily.** Clear the stall list, the moment queue, and the voice queue. Pass or hold each new flaw. Read what the system did that a person has to be the one to handle.
+- **Daily.** Open, triage, close. The queue holds the stalls, the moments, the flaws, and the decisions.
 - **Weekly.** Check declared boundaries against last week's actions. Retire one page the product can now say itself.
 - **Quarterly.** Re-run the setup skill and compare the gap report to last quarter's. Review the rung profile. Attach the value story to the ledger. Propose the next promotions.
 

@@ -78,7 +78,7 @@ A first-run prompt in the agent that asks the outcome before it asks for anythin
 
 ## Cadence
 
-- **Daily.** Read the stall list. Every stalled account gets a person or a written skip.
+- **Daily.** Open turns each new stall into a `stall` item. Every one gets a person or a written skip.
 - **Weekly.** Read the stalls that repeated. One change to the first-run script, or one voice item.
 - **Quarterly.** Time to first accepted action, by segment and by class. The self-onboarded share, and whether it moved.
 

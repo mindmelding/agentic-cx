@@ -14,16 +14,18 @@ Each is a Markdown file. Read it and follow it when the operator asks for it by 
 |---|---|
 | "Set me up", "where do we stand", "what are we missing" | [`skill/SKILL.md`](skill/SKILL.md) |
 | "Start the day", "what's new" | [`skills/open/SKILL.md`](skills/open/SKILL.md) |
-| A customer is waiting, or "draft a reply to…" | [`skills/floor/SKILL.md`](skills/floor/SKILL.md) |
-| A pass, hold, or documentation decision is waiting | [`skills/triage/SKILL.md`](skills/triage/SKILL.md) |
+| "What's next", "work the queue", "let's go" | [`skills/triage/SKILL.md`](skills/triage/SKILL.md) |
+| A customer pinged directly, or "draft a reply to…" | [`skills/floor/SKILL.md`](skills/floor/SKILL.md) |
 | "Wrap up", "end of day" | [`skills/close/SKILL.md`](skills/close/SKILL.md) |
 | "Refresh the harness tables", monthly | [`skills/refresh/SKILL.md`](skills/refresh/SKILL.md) |
+
+All work goes through one queue in `local/queue.md`, described in [`queue.md`](queue.md). Every decision the operator makes is logged in `local/log.md`. Never raise a kind of work above its ceiling in `queue.md`, and never promote a rung without the operator's yes.
 
 Paths inside the skills are relative to the skill file. Resolve them from the repo, not from wherever you were invoked.
 
 ## Rules
 
-- **Customer data never enters git.** Write company and customer material only to `stack.md`, `voice-queue.md`, `context-inbox.md`, and `local/`. All four are gitignored. Never commit them, and never copy a customer's words into a tracked file.
+- **Customer data never enters git.** Write company and customer material only to `stack.md` and `local/`. Both are gitignored. Never commit them, and never copy a customer's words into a tracked file.
 - **Ask before you look.** Before reading past chats, connector data, a product repo, or any customer record, say what you want to read and wait for a yes. Never read secret values.
 - **Sensitive actions wait for a yes.** Money, personal data, account access, deletion, and anything sent outside the company. See [`floor/guardrails/authority.md`](floor/guardrails/authority.md).
 - **Everything customer-facing is a draft** until the overlay in `local/overlay/` grants otherwise.

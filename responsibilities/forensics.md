@@ -45,7 +45,7 @@ OpenTelemetry into a self-hosted trace store. The sampling queue is a view on th
 
 ## Cadence
 
-- **Daily.** Clear the moment queue: a first clean autonomous run worth telling the customer about, edit distance climbing, a champion who left, a severity 2 that needs a person. Cap the queue. A second inbox is a failed design.
+- **Daily.** Open turns these into queue items: a first clean autonomous run worth telling the customer about, edit distance climbing, a champion who left, a severity 2 that needs a person. Cap the queue. A second inbox is a failed design.
 - **Weekly.** Audit the judge on the fixed slice. Close or advance every open severity 1 and 2.
 - **Quarterly.** Read severities next to rungs. A capability that keeps demoting is not ready to climb.
 

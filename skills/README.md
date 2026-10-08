@@ -1,13 +1,13 @@
 # Skills
 
-Four skills. Plain Markdown. Any agent follows one by reading its `SKILL.md`.
+One queue, worked by [triage](triage/SKILL.md), defined in [`queue.md`](../queue.md). Plain Markdown. Any agent follows one by reading its `SKILL.md`.
 
 | When | Skill | Stops when |
 |---|---|---|
-| Start of day | [Open](open/SKILL.md) | The board is posted. Nothing is filed. |
-| During the day | [Floor](floor/SKILL.md) | One customer moment is handled, and any fact or flaw from it is written down. |
-| During the day | [Triage](triage/SKILL.md) | The waiting item is passed, held, or given a doc disposition. |
-| End of day | [Close](close/SKILL.md) | The day note exists. Friday's close has promoted or discarded the week. |
+| Start of day | [Open](open/SKILL.md) | New things are items, what may run on its own is done, and the board is posted. |
+| During the day | [Triage](triage/SKILL.md) | The queue is empty, the operator stops, or 25 items are done. Each one is logged. |
+| When a customer pings | [Floor](floor/SKILL.md) | One moment is handled and logged, and any fact or flaw is in the queue. |
+| End of day | [Close](close/SKILL.md) | The day note exists. On Friday, promotions, rules, and the autonomy report have been proposed. |
 | Monthly | [Refresh](refresh/SKILL.md) | Every harness row is verified within 90 days, and the changelog says what moved. |
 
 The schedule is [routines](../routines.md). Setup, once, is [skill/SKILL.md](../skill/SKILL.md).

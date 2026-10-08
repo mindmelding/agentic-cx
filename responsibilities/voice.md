@@ -75,7 +75,7 @@ The product change, one sentence.
 Seen 4 times.
 ```
 
-The queue is local. It is not part of this manual. The skill writes it beside `stack.md`, and both stay uncommitted.
+Items live in the team's one queue, `local/queue.md`, as `flaw` and `flaw-evidence` kinds. See [`queue.md`](../queue.md). It stays uncommitted.
 
 ## Measures
 
