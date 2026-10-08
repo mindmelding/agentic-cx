@@ -85,7 +85,7 @@ A new company starts at 0. A rung moves on the record of accepted decisions, the
 
 ### If nothing is found
 
-Markdown or YAML in the repo, one file per class, with a `sources` list. Render with Fumadocs or Starlight. A CI script that marks those specs unverified and exits 1 when a `never` breaks. The decision log can be the same pull request until a separate store exists.
+Markdown or YAML in the repo, one file per class, with a `sources` list. Render with Fumadocs or Starlight. A CI script that marks those specs unverified and exits 1 when a `never` breaks. The decision log can be the same pull request until a separate store exists. The affected-path check and the decision on the pull request ship with this manual: [the spec check](../install/spec-check.md).
 
 ## Cadence
 

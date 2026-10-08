@@ -1,0 +1,19 @@
+class: answer_behavior_question
+fires_when: someone on the team asks how people are using their product
+may:
+  - answer from that company's own events
+  - name the group of users that accounts for a change
+never:
+  - invent a number that is not in the events
+  - show one customer's users to another customer
+approval: none for a read. The answer is the action
+default_rung: 3
+reach:
+  - read access to the company's event stream
+reversible: yes. An answer changes nothing
+context_floor:
+  - the company's event stream is connected
+  - the activation event is named
+sources:
+  - src/analytics/answer.ts
+  - src/analytics/what-changed.ts

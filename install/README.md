@@ -38,6 +38,10 @@ Then `scripts/cx init`. It creates those files from the templates, with a `local
 
 Setup works better with your customer data connected: the CRM or account store, the support desk or inbox, the tracker product uses. Connect them in your agent host first, so setup can find them. See [context-layer.md](context-layer.md).
 
+## The spec check, on its own
+
+The [documentation](../responsibilities/documentation.md) check runs in your product repo's CI, with no setup: a GitHub Action that names the specs a pull request touched and holds a moved `never` line for a person. See [spec-check.md](spec-check.md).
+
 ## Two other ways to use it
 
 - **Without an agent.** Read [`README.md`](../README.md) and the [self-check](../assessment/index.html). The manual is written for people first.

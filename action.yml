@@ -1,0 +1,84 @@
+name: Agentic CX spec check
+description: Name the action-class specs a pull request touched, and hold the merge until each has a doc decision.
+branding:
+  icon: file-text
+  color: gray-dark
+
+inputs:
+  specs:
+    description: The spec register, relative to the repo root. One YAML file per action class.
+    default: specs
+  require-disposition:
+    description: Fail on any touched spec with no disposition. By default only a moved `never` line blocks.
+    default: "false"
+  comment:
+    description: Keep one comment on the pull request up to date with the report.
+    default: "true"
+  token:
+    description: Token for reading the pull request's files and writing the comment.
+    default: ${{ github.token }}
+
+outputs:
+  report:
+    description: Path to the Markdown report.
+    value: ${{ steps.check.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - name: Lint the register
+      if: github.event_name != 'pull_request'
+      shell: bash
+      env:
+        CX: ${{ github.action_path }}/scripts/cx
+        SPECS: ${{ inputs.specs }}
+      run: python3 "$CX" spec lint --specs "$SPECS"
+
+    - name: Check the specs this pull request touched
+      id: check
+      if: github.event_name == 'pull_request'
+      shell: bash
+      env:
+        CX: ${{ github.action_path }}/scripts/cx
+        SPECS: ${{ inputs.specs }}
+        REQUIRE: ${{ inputs.require-disposition }}
+        COMMENT: ${{ inputs.comment }}
+        GH_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        PR: ${{ github.event.pull_request.number }}
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        set -uo pipefail
+        work="$RUNNER_TEMP/cx-spec"
+        mkdir -p "$work"
+        report="$work/report.md"
+        echo "report=$report" >> "$GITHUB_OUTPUT"
+
+        # The base commit, so the check can show what moved in a spec. A shallow checkout lacks it.
+        git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$BASE_SHA"
+
+        # Changed files from the API: exact for the pull request, whatever the checkout depth.
+        gh api --paginate "repos/$REPO/pulls/$PR/files" \
+          --jq '.[] | .filename, (.previous_filename // empty)' > "$work/changed.txt" || exit 2
+        jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH" > "$work/body.md"
+
+        flags=()
+        [ "$REQUIRE" = "true" ] && flags+=(--require-disposition)
+        python3 "$CX" spec check --specs "$SPECS" --base "$BASE_SHA" \
+          --changed "$work/changed.txt" --body-file "$work/body.md" --format markdown "${flags[@]}" > "$report"
+        status=$?
+        cat "$report" >> "$GITHUB_STEP_SUMMARY"
+        [ "$status" -eq 2 ] && exit 2
+
+        if [ "$COMMENT" = "true" ]; then
+          existing=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            --jq '.[] | select(.body | startswith("<!-- cx-spec -->")) | .id' | head -n 1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$existing" -F body=@"$report" > /dev/null \
+              || echo "::warning::Could not update the spec comment. The report is in the job summary."
+          elif ! grep -q '^None\. No source path' "$report"; then
+            gh api -X POST "repos/$REPO/issues/$PR/comments" -F body=@"$report" > /dev/null \
+              || echo "::warning::Could not comment. A pull request from a fork gets a read-only token. The report is in the job summary."
+          fi
+        fi
+        exit "$status"

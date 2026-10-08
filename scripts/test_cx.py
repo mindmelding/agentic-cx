@@ -6,8 +6,10 @@ import datetime
 import io
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -224,6 +226,189 @@ class Run(unittest.TestCase):
     def test_refusal_exits_2(self):
         with redirect_stderr(io.StringIO()):
             self.assertEqual(cx.main(["run", "triage", "--harness", "claude", "--dry-run"]), 2)
+
+
+
+EXAMPLE_SPEC = cx.ROOT / "templates" / "spec" / "answer_behavior_question.yaml"
+
+
+def git(repo, *args):
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+
+
+class SpecParse(unittest.TestCase):
+    def test_fallback_reads_the_example_like_pyyaml(self):
+        text = EXAMPLE_SPEC.read_text()
+        with mock.patch.dict(sys.modules, {"yaml": None}):
+            fallback = cx.parse_spec_yaml(text)
+        self.assertEqual(fallback["class"], "answer_behavior_question")
+        self.assertEqual(fallback["default_rung"], 3)
+        self.assertEqual(len(fallback["never"]), 2)
+        try:
+            import yaml
+        except ModuleNotFoundError:
+            return
+        self.assertEqual(fallback, yaml.safe_load(text))
+
+    def test_fallback_refuses_what_it_cannot_read(self):
+        with mock.patch.dict(sys.modules, {"yaml": None}):
+            with self.assertRaises(cx.CxError):
+                cx.parse_spec_yaml("fires_when: >\n  folded text\n")
+            with self.assertRaises(cx.CxError):
+                cx.parse_spec_yaml("nested:\n  key: value\n")
+
+    def test_dispositions_take_the_triage_words(self):
+        body = "Fix\n\ndoc: a_b = no-page\n- doc: `c_d`: promise-line\ndoc: e = Guide\n"
+        self.assertEqual(cx.parse_dispositions(body), {"a_b": "spec-only", "c_d": "page", "e": "guide"})
+
+
+class SpecSources(unittest.TestCase):
+    def test_file_directory_and_glob(self):
+        self.assertTrue(cx.source_matches("src/a.ts", "src/a.ts"))
+        self.assertTrue(cx.source_matches("./src/a.ts", "src/a.ts"))
+        self.assertTrue(cx.source_matches("src/analytics", "src/analytics/x/y.ts"))
+        self.assertTrue(cx.source_matches("src/analytics/", "src/analytics/y.ts"))
+        self.assertFalse(cx.source_matches("src/analytics", "src/analytics-old/y.ts"))
+        self.assertTrue(cx.source_matches("src/**/*.ts", "src/a/b/c.ts"))
+        self.assertTrue(cx.source_matches("src/**/*.ts", "src/c.ts"))
+        self.assertFalse(cx.source_matches("src/**/*.ts", "lib/c.ts"))
+        self.assertTrue(cx.source_matches(".github/workflows/ci.yml", ".github/workflows/ci.yml"))
+
+
+class SpecLint(unittest.TestCase):
+    def spec(self, **changes):
+        data = cx.parse_spec_yaml(EXAMPLE_SPEC.read_text())
+        data.update(changes)
+        return cx.Spec("specs/x.yaml", data)
+
+    def errors(self, *specs, repo=None):
+        return [m for level, m in cx.lint_specs(list(specs), repo or Path("."), check_sources=repo is not None) if level == "error"]
+
+    def test_the_example_is_clean(self):
+        self.assertEqual(cx.lint_specs([self.spec()], Path("."), check_sources=False), [])
+
+    def test_missing_field(self):
+        data = cx.parse_spec_yaml(EXAMPLE_SPEC.read_text())
+        del data["never"]
+        self.assertTrue(any("`never`" in e for e in self.errors(cx.Spec("s.yaml", data))))
+
+    def test_irreversible_never_silent(self):
+        self.assertTrue(any("irreversible" in e for e in self.errors(self.spec(reversible="no. Sent mail stays sent"))))
+        self.assertTrue(any("irreversible" in e for e in self.errors(self.spec(reversible=False))))
+
+    def test_rung_range_and_duplicates(self):
+        self.assertTrue(self.errors(self.spec(default_rung=5)))
+        self.assertTrue(any("also defined" in e for e in self.errors(self.spec(), self.spec())))
+
+    def test_missing_source_and_template_placeholders(self):
+        repo = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, repo)
+        self.assertTrue(any("does not exist" in e for e in self.errors(self.spec(), repo=repo)))
+        template = cx.parse_spec_yaml(cx.SPEC_TEMPLATE.format(name="x"))
+        self.assertTrue(any("placeholders" in e for e in self.errors(cx.Spec("t.yaml", template))))
+
+
+class SpecCheck(unittest.TestCase):
+    """A product repo with the example spec, and a branch that changes it."""
+
+    def setUp(self):
+        self.repo = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.repo)
+        git(self.repo, "init", "-q", "-b", "main")
+        git(self.repo, "config", "user.email", "t@example.com")
+        git(self.repo, "config", "user.name", "t")
+        (self.repo / "src" / "analytics").mkdir(parents=True)
+        for name in ("answer.ts", "what-changed.ts"):
+            (self.repo / "src" / "analytics" / name).write_text("x\n")
+        (self.repo / "README.md").write_text("x\n")
+        (self.repo / "specs").mkdir()
+        shutil.copy(EXAMPLE_SPEC, self.repo / "specs")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "base")
+        git(self.repo, "checkout", "-qb", "change")
+
+    def commit(self, path, text):
+        (self.repo / path).write_text(text)
+        git(self.repo, "commit", "-qam", "change")
+
+    def check(self, body="", require_all=False):
+        specs = cx.load_specs(self.repo / "specs", self.repo)
+        touched = cx.affected(specs, cx.changed_paths(self.repo, "main"), self.repo, "main", self.repo / "specs")
+        decided = cx.parse_dispositions(body)
+        for t in touched:
+            t.disposition = decided.get(t.spec.name, "")
+        return touched, cx.gate(touched, require_all)
+
+    def move_never(self):
+        path = self.repo / "specs" / "answer_behavior_question.yaml"
+        self.commit("specs/answer_behavior_question.yaml", path.read_text().replace("never:\n", "never:\n  - export raw events\n"))
+
+    def test_untouched_change_names_nothing(self):
+        self.commit("README.md", "y\n")
+        self.assertEqual(self.check(), ([], {}))
+
+    def test_source_change_is_unverified_not_blocking(self):
+        self.commit("src/analytics/what-changed.ts", "y\n")
+        touched, blocking = self.check()
+        self.assertEqual([t.spec.name for t in touched], ["answer_behavior_question"])
+        self.assertEqual(touched[0].paths, ["src/analytics/what-changed.ts"])
+        self.assertFalse(touched[0].never_changed)
+        self.assertEqual(blocking, {})
+        self.assertTrue(self.check(require_all=True)[1])
+
+    def test_moved_never_waits_for_a_person(self):
+        self.move_never()
+        touched, blocking = self.check()
+        self.assertTrue(touched[0].never_changed)
+        self.assertIn(touched[0], blocking)
+
+    def test_moved_never_is_not_cleared_by_no_page(self):
+        self.move_never()
+        self.assertTrue(self.check("doc: answer_behavior_question = no-page")[1])
+        self.assertEqual(self.check("doc: answer_behavior_question = update")[1], {})
+
+    def test_unknown_disposition_blocks(self):
+        self.commit("src/analytics/answer.ts", "y\n")
+        self.assertTrue(self.check("doc: answer_behavior_question = later")[1])
+
+    def test_a_new_spec_is_new(self):
+        shutil.copy(EXAMPLE_SPEC, self.repo / "specs" / "second.yaml")
+        path = self.repo / "specs" / "second.yaml"
+        path.write_text(path.read_text().replace("class: answer_behavior_question", "class: warn_activation_drop"))
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "new")
+        touched, blocking = self.check()
+        new = [t for t in touched if t.spec.name == "warn_activation_drop"][0]
+        self.assertTrue(new.new)
+        self.assertIn(new, blocking)
+
+    def test_a_deleted_spec_waits_for_a_person(self):
+        git(self.repo, "rm", "-q", "specs/answer_behavior_question.yaml")
+        git(self.repo, "commit", "-qm", "drop")
+        touched, blocking = self.check()
+        self.assertEqual([(t.spec.name, t.removed) for t in touched], [("answer_behavior_question", True)])
+        self.assertIn(touched[0], blocking)
+        self.assertEqual(self.check("doc: answer_behavior_question = remove")[1], {})
+
+    def test_cli_exit_codes_and_markdown(self):
+        self.move_never()
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = cx.main(["spec", "check", "--repo", str(self.repo), "--base", "main", "--format", "markdown"])
+        self.assertEqual(code, 1)
+        self.assertTrue(out.getvalue().startswith(cx.COMMENT_MARKER))
+        self.assertIn("doc: answer_behavior_question = update", out.getvalue())
+        body = self.repo / "body.md"
+        body.write_text("doc: answer_behavior_question = update\n")
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(cx.main(["spec", "check", "--repo", str(self.repo), "--base", "main", "--body-file", str(body)]), 0)
+
+    def test_spec_new_never_overwrites(self):
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(cx.main(["spec", "new", "--repo", str(self.repo), "warn_activation_drop"]), 0)
+        with redirect_stderr(io.StringIO()):
+            self.assertEqual(cx.main(["spec", "new", "--repo", str(self.repo), "warn_activation_drop"]), 2)
+            self.assertEqual(cx.main(["spec", "new", "--repo", str(self.repo), "Bad-Name"]), 2)
 
 
 if __name__ == "__main__":

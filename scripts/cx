@@ -7,6 +7,10 @@
     scripts/cx run open                run a skill unattended, within local/consent.toml
     scripts/cx run close --dry-run     print the command instead of running it
 
+    scripts/cx spec new <class>        start a spec file in specs/
+    scripts/cx spec lint               check the spec register: fields, rungs, sources that exist
+    scripts/cx spec check --base main  name the specs a change touched and the doc decision each needs
+
     scripts/cx check reply.md          check one or more files against the lexicon
     scripts/cx check - < reply.md      check stdin
     scripts/cx check --gold            check every gold reply in floor/evals/cases/
@@ -644,6 +648,396 @@ def cmd_run(args):
     return proc.wait()
 
 
+# --- Spec register: the documentation check -----------------------------------
+#
+# One file per action class (action-class.md), YAML, in the product repo. `cx spec`
+# lints the register and, for a change, names the specs whose `sources` it touched
+# and the doc disposition each still needs. The pull request is the decision log
+# until a separate one exists.
+
+SPEC_REQUIRED = ("class", "fires_when", "may", "never", "approval", "default_rung", "sources")
+SPEC_LISTS = ("may", "never", "sources", "reach", "context_floor")
+SPEC_RECOMMENDED = ("reach", "reversible", "context_floor")
+
+# The dispositions in responsibilities/documentation.md, plus the words triage uses.
+DISPOSITIONS = {
+    "spec-only": "spec-only", "no-page": "spec-only", "no-documentation": "spec-only",
+    "page": "page", "promise-line": "page",
+    "guide": "guide",
+    "update": "update",
+    "remove": "remove",
+}
+DISPOSITION_LINE = re.compile(r"^\s*[-*]?\s*doc:\s*`?([\w.-]+)`?\s*[=:]\s*([a-z-]+)", re.I | re.M)
+COMMENT_MARKER = "<!-- cx-spec -->"
+
+SPEC_TEMPLATE = """\
+class: {name}
+fires_when: <the event that starts it>
+may:
+  - <what an instance is allowed to do>
+never:
+  - <what no instance may do>
+approval: <who has to say yes, and at which rung>
+default_rung: 0
+reach:
+  - <the systems and credentials an instance may use>
+reversible: <yes or no, in one step, and by whom>
+context_floor:
+  - <a fact or connection needed before a first instance is worth trying>
+sources:
+  - <a path in this repo that implements it>
+"""
+
+
+def parse_spec_yaml(text, source="<spec>"):
+    """The subset of YAML a spec uses: `key: value` and `key:` followed by `  - item`.
+
+    PyYAML is used when it is installed. Without it, anything outside that subset
+    is an error, so a spec never parses to something it does not say.
+    """
+    try:
+        import yaml
+    except ModuleNotFoundError:
+        yaml = None
+    if yaml is not None:
+        try:
+            data = yaml.safe_load(text)
+        except yaml.YAMLError as e:
+            raise CxError(f"{source}: not valid YAML: {e}")
+        if not isinstance(data, dict):
+            raise CxError(f"{source}: a spec is a mapping of fields")
+        return data
+
+    def scalar(raw):
+        raw = raw.strip()
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "'\"":
+            return raw[1:-1]
+        if re.fullmatch(r"-?\d+", raw):
+            return int(raw)
+        return raw
+
+    data, key = {}, None
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        item = re.match(r"^\s+-\s+(.*)$", line)
+        field = re.match(r"^([A-Za-z_][\w-]*):(?:\s+(.*))?$", line)
+        if item and key is not None and isinstance(data.get(key), list):
+            data[key].append(scalar(item.group(1)))
+        elif field:
+            key, value = field.group(1), field.group(2)
+            if value is None or not value.strip():
+                data[key] = []
+            elif value.strip()[0] in "|>[{&*!":
+                raise CxError(f"{source}:{n}: this YAML needs PyYAML (`pip install pyyaml`), or rewrite as `key: value` and `- item` lines")
+            else:
+                data[key] = scalar(value)
+        else:
+            raise CxError(f"{source}:{n}: cannot read {line.strip()!r}. Use `key: value`, or `key:` then `  - item` lines")
+    return data
+
+
+@dataclass
+class Spec:
+    path: str
+    data: dict
+
+    @property
+    def name(self):
+        return str(self.data.get("class") or Path(self.path).stem)
+
+    def items(self, field):
+        value = self.data.get(field) or []
+        return [str(v) for v in value] if isinstance(value, list) else [str(value)]
+
+
+def spec_files(spec_dir):
+    return sorted(p for p in Path(spec_dir).glob("*") if p.suffix in (".yaml", ".yml") and p.is_file())
+
+
+def load_specs(spec_dir, repo):
+    specs = []
+    for path in spec_files(spec_dir):
+        rel = str(path.resolve().relative_to(repo.resolve())) if path.resolve().is_relative_to(repo.resolve()) else str(path)
+        specs.append(Spec(rel, parse_spec_yaml(path.read_text(encoding="utf-8"), rel)))
+    return specs
+
+
+def source_matches(source, path):
+    """A source is a file, a directory (prefix), or a glob. `**` and `*` both cross folders."""
+    source = source.strip()
+    if source.startswith("./"):
+        source = source[2:]
+    if any(c in source for c in "*?["):
+        import fnmatch
+        return fnmatch.fnmatchcase(path, source) or fnmatch.fnmatchcase(path, source.replace("**/", ""))
+    source = source.rstrip("/")
+    return path == source or path.startswith(source + "/")
+
+
+def source_exists(source, repo):
+    source = source.strip()
+    if any(c in source for c in "*?["):
+        return any(repo.glob(source))
+    return (repo / source).exists()
+
+
+def lint_specs(specs, repo, check_sources=True):
+    """Return a list of (level, message). Level is error or warning."""
+    out = []
+    names = {}
+    for spec in specs:
+        where = spec.path
+        for field in SPEC_REQUIRED:
+            if field not in spec.data or spec.data[field] in (None, "", []):
+                out.append(("error", f"{where}: missing `{field}`"))
+        for field in SPEC_LISTS:
+            if field in spec.data and spec.data[field] not in (None, "") and not isinstance(spec.data[field], list):
+                out.append(("error", f"{where}: `{field}` is a list. Write each entry as `  - item`"))
+        for field in SPEC_RECOMMENDED:
+            if field not in spec.data:
+                out.append(("warning", f"{where}: no `{field}`. See action-class.md"))
+        rung = spec.data.get("default_rung")
+        if rung is not None and rung not in (0, 1, 2, 3):
+            out.append(("error", f"{where}: `default_rung` is 0, 1, 2, or 3, not {rung!r}"))
+        reversible = spec.data.get("reversible", "")
+        if rung == 3 and (reversible is False or str(reversible).lower().startswith("no")):
+            out.append(("error", f"{where}: an irreversible class never runs silently, so `default_rung` cannot be 3"))
+        if any("<" in v and ">" in v for f in SPEC_REQUIRED for v in spec.items(f)):
+            out.append(("error", f"{where}: still has template placeholders in <angle brackets>"))
+        if spec.name in names:
+            out.append(("error", f"{where}: class `{spec.name}` is also defined in {names[spec.name]}"))
+        names.setdefault(spec.name, where)
+        if check_sources:
+            for source in spec.items("sources"):
+                if not ("<" in source and ">" in source) and not source_exists(source, repo):
+                    out.append(("error", f"{where}: source `{source}` does not exist. The spec names code that is gone"))
+    return out
+
+
+def git(repo, *args):
+    try:
+        r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
+    except OSError as e:
+        raise CxError(f"cannot run git: {e}")
+    if r.returncode:
+        raise CxError(f"git {' '.join(args)}: {r.stderr.strip() or 'failed'}")
+    return r.stdout
+
+
+def changed_paths(repo, base, head="HEAD"):
+    return [p for p in git(repo, "diff", "--name-only", f"{base}...{head}").splitlines() if p]
+
+
+def spec_at(repo, ref, path):
+    """The spec as it was at ref, or None if it did not exist there."""
+    try:
+        text = git(repo, "show", f"{ref}:{path}")
+    except CxError:
+        return None
+    return Spec(path, parse_spec_yaml(text, f"{ref}:{path}"))
+
+
+def parse_dispositions(body):
+    """{class: disposition} from `doc: <class> = <disposition>` lines. Unknown words are kept as-is."""
+    found = {}
+    for name, word in DISPOSITION_LINE.findall(body or ""):
+        found[name] = DISPOSITIONS.get(word.lower(), word.lower())
+    return found
+
+
+@dataclass(eq=False)
+class Touched:
+    spec: Spec
+    paths: list          # changed source paths
+    spec_edited: bool    # the spec file itself changed
+    new: bool            # the spec did not exist at base
+    never_before: list
+    may_before: list
+    disposition: str = ""
+    removed: bool = False  # the spec file was deleted: every promise on it goes
+
+    def now(self, field):
+        return [] if self.removed else self.spec.items(field)
+
+    @property
+    def never_changed(self):
+        return self.new or self.never_before != self.now("never")
+
+    @property
+    def may_changed(self):
+        return self.new or self.may_before != self.now("may")
+
+    @property
+    def needs_person(self):
+        """A `never` line that moved always waits for a person's yes."""
+        return self.never_changed
+
+
+def affected(specs, changed, repo=None, base=None, spec_dir=None):
+    """The specs a change touched, in register order, then any spec the change deleted."""
+    out = []
+    changed = list(changed)
+    for spec in specs:
+        paths = [p for p in changed if any(source_matches(s, p) for s in spec.items("sources"))]
+        edited = spec.path in changed
+        if not (paths or edited):
+            continue
+        before = spec_at(repo, base, spec.path) if (repo is not None and base) else None
+        new = edited and repo is not None and base is not None and before is None
+        never_before = before.items("never") if before else spec.items("never")
+        may_before = before.items("may") if before else spec.items("may")
+        out.append(Touched(spec, paths, edited, new, never_before, may_before))
+    if repo is not None and base and spec_dir is not None and Path(spec_dir).resolve().is_relative_to(Path(repo).resolve()):
+        prefix = str(Path(spec_dir).resolve().relative_to(Path(repo).resolve()))
+        for path in changed:
+            if Path(path).suffix in (".yaml", ".yml") and str(Path(path).parent) == prefix and not (Path(repo) / path).exists():
+                before = spec_at(repo, base, path)
+                if before is not None:
+                    out.append(Touched(before, [], True, False, before.items("never"), before.items("may"), removed=True))
+    return out
+
+
+# A moved `never` is a moved promise, so the promise page moves with it.
+NEVER_DISPOSITIONS = ("page", "update", "remove")
+
+
+def gate(touched, require_all=False):
+    """{touched: reason} for each spec that blocks the change."""
+    blocking = {}
+    for t in touched:
+        if t.disposition and t.disposition not in DISPOSITIONS.values():
+            blocking[t] = f"`{t.disposition}` is not a disposition"
+        elif t.never_changed and t.disposition and t.disposition not in NEVER_DISPOSITIONS:
+            blocking[t] = f"a moved `never` needs {', '.join(NEVER_DISPOSITIONS)}, not {t.disposition}"
+        elif not t.disposition and t.needs_person:
+            blocking[t] = "a moved `never` waits for a person's decision"
+        elif not t.disposition and require_all:
+            blocking[t] = "no disposition yet"
+    return blocking
+
+
+def lines_diff(before, after):
+    removed = [f"- {v}" for v in before if v not in after]
+    added = [f"+ {v}" for v in after if v not in before]
+    return removed + added
+
+
+def report_markdown(touched, blocking, problems):
+    out = [COMMENT_MARKER, "### Specs this change touches", ""]
+    if not touched:
+        out.append("None. No source path on any spec changed, so no doc decision is waiting.")
+    else:
+        out += ["| Class | Why | `never` | Disposition |", "|---|---|---|---|"]
+        for t in touched:
+            why = ", ".join(f"`{p}`" for p in t.paths[:3]) + (f" and {len(t.paths) - 3} more" if len(t.paths) > 3 else "")
+            if t.new:
+                why = "new spec"
+            elif t.removed:
+                why = "spec deleted"
+            elif t.spec_edited:
+                why = (why + ", " if why else "") + "spec edited"
+            never = "new" if t.new else ("**changed**" if t.never_changed else "unchanged")
+            state = t.disposition or "unverified"
+            if t in blocking:
+                state = f"**{blocking[t]}**" if not t.disposition else f"{t.disposition}: **{blocking[t]}**"
+            out.append(f"| `{t.spec.name}` | {why} | {never} | {state} |")
+        waiting = [t for t in touched if not t.disposition or t in blocking]
+        if waiting:
+            out += [
+                "",
+                "Record one decision per class in the pull request description. The check re-runs when it is edited:",
+                "",
+                "```",
+                *[f"doc: {t.spec.name} = {'update' if t.never_changed else 'no-page'}" for t in waiting],
+                "```",
+            ]
+        out += [
+            "",
+            "`no-page` (spec only: the product reveals it), `page` (a line on the promise page), `guide` "
+            "(a person still has to walk a sequence), `update` (the spec changes with the code), or `remove` "
+            "(the product now says it). A moved `never` line always waits for a person.",
+        ]
+        for t in touched:
+            if t.never_changed or t.may_changed:
+                out += ["", f"<details><summary><code>{t.spec.name}</code>: what moved</summary>", "", "```diff"]
+                if t.may_changed:
+                    out += ["# may", *lines_diff(t.may_before if not t.new else [], t.now("may"))]
+                if t.never_changed:
+                    out += ["# never", *lines_diff(t.never_before if not t.new else [], t.now("never"))]
+                out += ["```", "", "</details>"]
+    if problems:
+        out += ["", "**Register problems**", ""] + [f"- {level}: {msg}" for level, msg in problems]
+    out += ["", "<sub>From `cx spec`. See responsibilities/documentation.md in the agentic CX manual.</sub>"]
+    return "\n".join(out) + "\n"
+
+
+def report_json(touched, blocking, problems):
+    return json.dumps({
+        "touched": [{
+            "class": t.spec.name, "spec": t.spec.path, "paths": t.paths, "spec_edited": t.spec_edited,
+            "new": t.new, "removed": t.removed, "never_changed": t.never_changed, "may_changed": t.may_changed,
+            "disposition": t.disposition or None, "blocking": blocking.get(t),
+        } for t in touched],
+        "problems": [{"level": l, "message": m} for l, m in problems],
+    }, indent=2) + "\n"
+
+
+def report_text(touched, blocking, problems):
+    out = []
+    for level, msg in problems:
+        out.append(f"{level}: {msg}")
+    for t in touched:
+        flag = "BLOCKS" if t in blocking else "ok"
+        detail = blocking.get(t) or ("new" if t.new else "deleted" if t.removed else "never changed" if t.never_changed else "unverified")
+        out.append(f"{flag:<6} {t.spec.name:<32} {t.disposition or '-':<10} {detail}  ({', '.join(t.paths) or t.spec.path})")
+    if not touched:
+        out.append("No spec touched.")
+    return "\n".join(out) + "\n"
+
+
+def cmd_spec(args):
+    repo = Path(args.repo).resolve()
+    spec_dir = (repo / args.specs) if not Path(args.specs).is_absolute() else Path(args.specs)
+    if args.spec_command == "new":
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", args.name):
+            raise CxError("a class name is lower_snake_case, like answer_behavior_question")
+        path = spec_dir / f"{args.name}.yaml"
+        if not write_new(path, SPEC_TEMPLATE.format(name=args.name)):
+            raise CxError(f"{path} already exists")
+        print(f"created  {path.relative_to(repo) if path.is_relative_to(repo) else path}")
+        return 0
+    if not spec_dir.is_dir():
+        raise CxError(f"no spec register at {spec_dir}. Start one with `cx spec new <class>`")
+    specs = load_specs(spec_dir, repo)
+    problems = lint_specs(specs, repo, check_sources=not args.no_source_check)
+    errors = [p for p in problems if p[0] == "error"]
+    if args.spec_command == "lint":
+        for level, msg in problems:
+            print(f"{level}: {msg}")
+        print(f"cx spec lint: {len(specs)} spec(s), {len(errors)} error(s), {len(problems) - len(errors)} warning(s)", file=sys.stderr)
+        return 1 if errors else 0
+    # check
+    if args.changed is not None:
+        stream = sys.stdin if args.changed == "-" else open(args.changed, encoding="utf-8")
+        changed = [line.strip() for line in stream if line.strip()]
+    elif args.base:
+        changed = changed_paths(repo, args.base, args.head)
+    else:
+        raise CxError("give --base REF, or --changed FILE ('-' for stdin) with the changed paths")
+    body = ""
+    if args.body_file:
+        body = sys.stdin.read() if args.body_file == "-" else Path(args.body_file).read_text(encoding="utf-8")
+    touched = affected(specs, changed, repo, args.base, spec_dir)
+    decided = parse_dispositions(body)
+    for t in touched:
+        t.disposition = decided.get(t.spec.name, "")
+    blocking = gate(touched, args.require_disposition)
+    render = {"markdown": report_markdown, "json": report_json, "text": report_text}[args.format]
+    sys.stdout.write(render(touched, blocking, problems))
+    return 1 if (blocking or errors) else 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="cx", description="Helpers for the agentic CX manual.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -663,8 +1057,27 @@ def main(argv=None):
     run.add_argument("skill", choices=sorted(SKILL_FILES), help="open or close; the others wait on a person")
     run.add_argument("--harness", help="a harness from models.toml (default: CX_HARNESS, else the first on PATH)")
     run.add_argument("--dry-run", action="store_true", help="print the command instead of running it")
+    spec = sub.add_parser("spec", help="lint the spec register, and name the specs a change touched")
+    spec_sub = spec.add_subparsers(dest="spec_command", required=True)
+    for name, help_text in (("lint", "check every spec has its fields and its sources exist"),
+                            ("check", "name the specs a change touched and the doc decision each needs"),
+                            ("new", "start a spec file for a new action class")):
+        p = spec_sub.add_parser(name, help=help_text)
+        p.add_argument("--repo", default=".", help="the product repo (default: the current directory)")
+        p.add_argument("--specs", default="specs", help="the spec register, relative to --repo (default: specs)")
+        if name == "new":
+            p.add_argument("name", help="the class name, lower_snake_case")
+        else:
+            p.add_argument("--no-source-check", action="store_true", help="do not require each source path to exist")
+        if name == "check":
+            p.add_argument("--base", help="the ref the change is against; the diff is base...head")
+            p.add_argument("--head", default="HEAD", help="default: HEAD")
+            p.add_argument("--changed", help="a file of changed paths, one per line, or '-' for stdin; replaces the git diff")
+            p.add_argument("--body-file", help="the pull request description, for `doc: <class> = <disposition>` lines")
+            p.add_argument("--require-disposition", action="store_true", help="fail on any touched spec with no disposition, not only a moved `never`")
+            p.add_argument("--format", choices=("text", "markdown", "json"), default="text")
     args = parser.parse_args(argv)
-    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run}
+    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec}
     try:
         return commands[args.command](args)
     except CxError as e:
