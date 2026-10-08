@@ -99,7 +99,7 @@ Also note, for each, whether CX or product holds it today, and whether that matc
 
 ## 5. Write
 
-**`stack.md`** at the root of this repo. Start from [`../templates/house/state/stack.md`](../templates/house/state/stack.md): front matter with `updated` and `ledger_level`, one section per responsibility with a line for every capability in `tools.md`, then `Inward`. Keep the capability names as they are. Replace each `absent, not yet assessed` with what you found:
+**`stack.md`** in the house: the repo root, or `CX_HOUSE`. Start from [`../templates/house/state/stack.md`](../templates/house/state/stack.md): front matter with `updated` and `ledger_level`, one section per responsibility with a line for every capability in `tools.md`, then `Inward`. Keep the capability names as they are. Replace each `absent, not yet assessed` with what you found:
 
 ```markdown
 ## Context

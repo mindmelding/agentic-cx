@@ -1,6 +1,6 @@
 # Inside your product's support agent
 
-The [`floor/`](../floor/README.md) canon is written so the agent that replies to your customers can load it. This page is for the engineer wiring it in. There is no generated bundle yet. You load the files.
+The [`floor/`](../floor/README.md) canon is written so the agent that replies to your customers can load it. This page is for the engineer wiring it in. There is no generated bundle yet. You load the files, or, if your agent speaks MCP, connect it to `scripts/cx mcp serve` and read them with `manual_read` ([mcp.md](mcp.md)). The `lexicon_check` tool there is the same check as the one below.
 
 ## What to load
 

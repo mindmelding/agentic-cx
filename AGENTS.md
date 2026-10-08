@@ -4,7 +4,7 @@ You are working inside an operating manual for the customer team at a company wh
 
 ## First run
 
-If `stack.md` does not exist at the repo root, the operator has not been set up. Offer to run the setup skill: [`skill/SKILL.md`](skill/SKILL.md). It asks permission before it reads anything, interviews the operator, scores where the team stands, and writes `stack.md` and `local/assessment.md`.
+Private files live in the **house**: the repo root, or the folder `CX_HOUSE` names. `scripts/cx doctor` prints it. If `stack.md` does not exist in the house, the operator has not been set up. Offer to run the setup skill: [`skill/SKILL.md`](skill/SKILL.md). It asks permission before it reads anything, interviews the operator, scores where the team stands, and writes `stack.md` and `local/assessment.md`.
 
 If `local/` does not exist, run `scripts/cx init` first. It creates the private files and never overwrites. `scripts/cx doctor` says what is still missing.
 
@@ -21,11 +21,13 @@ Each is a Markdown file. Read it and follow it when the operator asks for it by 
 | "Wrap up", "end of day" | [`skills/close/SKILL.md`](skills/close/SKILL.md) |
 | "Refresh the harness tables", monthly | [`skills/refresh/SKILL.md`](skills/refresh/SKILL.md) |
 
-Paths inside the skills are relative to the skill file. Resolve them from the repo, not from wherever you were invoked.
+Paths inside the skills are relative to the skill file. Resolve them from the repo, not from wherever you were invoked. Paths to the private files are relative to the house.
+
+A host connected to the `agentic-cx` MCP server gets the same skills as prompts and reads the manual with `manual_read`. See [`install/mcp.md`](install/mcp.md).
 
 ## Rules
 
-- **Customer data never enters git.** Write company and customer material only to `stack.md`, `voice-queue.md`, `context-inbox.md`, and `local/`. All four are gitignored. Never commit them, and never copy a customer's words into a tracked file.
+- **Customer data never enters git.** Write company and customer material only to `stack.md`, `voice-queue.md`, `context-inbox.md`, and `local/`, in the house. In a clone all four are gitignored; a house outside the clone is outside git altogether. Never commit them, and never copy a customer's words into a tracked file.
 - **Ask before you look.** Before reading past chats, connector data, a product repo, or any customer record, say what you want to read and wait for a yes. Record each yes in `local/consent.toml`. When nobody is there to ask, as in a `scripts/cx run`, that file is the yes: read nothing it leaves out. Never read secret values.
 - **Sensitive actions wait for a yes.** Money, personal data, account access, deletion, and anything sent outside the company. See [`floor/guardrails/authority.md`](floor/guardrails/authority.md).
 - **Everything customer-facing is a draft** until the overlay in `local/overlay/` grants otherwise.
