@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/cx check:*)",
+      "Bash(scripts/cx doctor)",
+      "Bash(scripts/cx models:*)",
+      "Bash(scripts/cx init)",
+      "Bash(python3 scripts/test_cx.py)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}

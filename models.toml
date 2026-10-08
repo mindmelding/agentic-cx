@@ -2,6 +2,7 @@
 #
 # A tier is a job description. Each harness maps a tier to a model it knows.
 # `cx models` prints the resolved table. `cx run <skill>` uses it.
+# {kit} is the manual, {house} is where the private files live. Both are the repo root today.
 # An empty model means "the harness default": the flag is dropped.
 
 [tiers]
@@ -33,9 +34,13 @@ technical-troubleshooting = "standard"
 judge_harness = ""
 
 [harness.claude]
-command = ["claude", "-p", "{prompt}", "--model", "{model}", "--add-dir", "{kit}", "--add-dir", "{house}", "--permission-mode", "acceptEdits", "--allowedTools", "{allow}"]
+command = ["claude", "-p", "{prompt}", "--model", "{model}", "--add-dir", "{kit}", "--add-dir", "{house}", "--allowedTools", "{allow}"]
 pure = ["claude", "-p", "{prompt}", "--model", "{model}", "--output-format", "text"]
-allow = ["Read", "Write", "Edit", "Glob", "Grep", "Bash(cx:*)", "Bash(python3:*)", "mcp__moonbase"]
+# What an unattended run may do without asking. Anything else is denied, because
+# nobody is there to approve it. Reads inside the repo need no rule; reads outside
+# it are denied. Writes stay in the private files. `cx run` adds mcp__<name> for
+# each connector local/consent.toml allows.
+allow = ["Edit(local/**)", "Edit(voice-queue.md)", "Edit(context-inbox.md)", "Bash(scripts/cx check:*)"]
 fast = "haiku"
 standard = "sonnet"
 frontier = "opus"

@@ -23,6 +23,8 @@ It never reads secret values, production data, or customer records. Customer wor
 
 If they decline a source, skip it and ask about that part instead.
 
+Record the answers in `local/consent.toml` (run `scripts/cx init` first if it does not exist): `read.past_chats`, `read.connector_config`, and `read.product_repo` as a path. Unattended runs read that file instead of asking, so a no stays a no.
+
 ## 1. Look (silent)
 
 **Past chats and memory.** Read what the host exposes. Look for the operator's title, team, recurring work, the tools they name, and what they complain about.
@@ -63,6 +65,7 @@ Only what nothing on disk answered. Offer a default they can accept with "yes." 
 - Which tools are inward only: summaries, deflection, QA on the team's own queue.
 - Whether product has a tracker CX can file into, and who on product owns the line in [`../boundary.md`](../boundary.md).
 - For each `partial` or `absent` capability: where it lives today, if anywhere, who may write it, and whether they will take the default in `tools.md`.
+- Which connected tools open and close may read on a schedule, with nobody watching. Default: none. Write the names to `connectors.allowed` in `local/consent.toml`. Read access is enough.
 - What they would show their CEO to prove CX worked last quarter. The answer says which old metrics they are still reporting.
 - How the product is priced. Run the interview in [`../pricing.md`](../pricing.md#interview), one question per turn, after looking at the pricing page and any contract they share.
 

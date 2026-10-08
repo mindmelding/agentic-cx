@@ -3,6 +3,7 @@
 ```
 git clone https://github.com/mindmelding/agentic-cx.git
 cd agentic-cx
+scripts/cx init
 codex
 ```
 
@@ -24,4 +25,4 @@ More in [context-layer.md](context-layer.md).
 
 ## Check it worked
 
-After setup, `stack.md` and `local/assessment.md` exist and `git status` shows neither.
+`scripts/cx doctor`. After setup it reports no failures: the private files exist, are gitignored, and `stack.md` and `local/assessment.md` are written.

@@ -1,28 +1,45 @@
 #!/usr/bin/env python3
 """cx: command-line helpers for the agentic CX manual.
 
-Only `cx check` exists today. It reads the banned lists in
-floor/voice/LEXICON.md and scans a reply for them.
+    scripts/cx init                    create the private files: local/, the overlay, the queues, consent
+    scripts/cx doctor                  say what is set up, what is missing, and the next step
+    scripts/cx models                  print which model runs which skill, per harness
+    scripts/cx run open                run a skill unattended, within local/consent.toml
+    scripts/cx run close --dry-run     print the command instead of running it
 
-    scripts/cx check reply.md          check one or more files
+    scripts/cx check reply.md          check one or more files against the lexicon
     scripts/cx check - < reply.md      check stdin
     scripts/cx check --gold            check every gold reply in floor/evals/cases/
     scripts/cx check --templates       check the examples in templates/customer/
     scripts/cx check --strict ...      treat warnings as failures
 
-Exit codes: 0 clean, 1 at least one violation, 2 usage or lexicon error.
+Exit codes: 0 clean, 1 a violation or a failed check, 2 usage or config error.
+`run` passes through the harness's exit code.
 """
 
 import argparse
+import datetime
+import json
+import os
 import re
+import shlex
+import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11. Only check works without it.
+    tomllib = None
 
 ROOT = Path(__file__).resolve().parent.parent
 LEXICON = ROOT / "floor" / "voice" / "LEXICON.md"
 CASES = ROOT / "floor" / "evals" / "cases"
 TEMPLATES = ROOT / "templates" / "customer"
+OVERLAY_TEMPLATES = ROOT / "templates" / "house" / "overlay"
+MODELS = ROOT / "models.toml"
 
 BLOCK_KINDS = ("banned-phrases", "banned-words", "banned-openers", "banned-patterns")
 SALUTATION = re.compile(r"^(subject:.*|(hi|hey|hello|dear|morning|good morning|good afternoon)\b[^\n]{0,60},?)$", re.I)
@@ -221,6 +238,412 @@ def cmd_check(args):
     return 1 if errors else 0
 
 
+# --- Setup and unattended runs ------------------------------------------------
+#
+# The house is where one company's private files live: stack.md, the two queues,
+# and local/. It is the repo root, and all of it is gitignored.
+
+class CxError(Exception):
+    """A refusal or a config problem. main() prints it and exits 2."""
+
+
+PRIVATE = ("stack.md", "voice-queue.md", "context-inbox.md", "local/")
+
+# Skills that make sense with nobody answering. The rest wait on a person:
+# setup interviews, floor needs a customer in front of you, triage files only
+# after a yes, refresh edits the tracked manual.
+UNATTENDED = ("open", "close")
+
+SKILL_FILES = {
+    "setup": "skill/SKILL.md",
+    "open": "skills/open/SKILL.md",
+    "floor": "skills/floor/SKILL.md",
+    "triage": "skills/triage/SKILL.md",
+    "close": "skills/close/SKILL.md",
+    "refresh": "skills/refresh/SKILL.md",
+}
+
+CONSENT = """\
+# What an unattended run may read and use. `cx run` reads this before it starts.
+#
+# Setup (skill/SKILL.md, step 0) records each yes here. Edit it by hand to take
+# one back. Nothing in this file is a secret: never put a key or token here.
+# Nothing is sent outside the company from an unattended run, whatever this says.
+
+[read]
+# Summaries of past chats and agent memory on this machine.
+past_chats = false
+# The names of the connectors your agent hosts have configured. Never the keys.
+connector_config = false
+# A product repo to scan, as a path. Empty for none.
+product_repo = ""
+
+[connectors]
+# Connectors an unattended run may call, by the name your host knows them by,
+# e.g. ["moonbase", "linear"]. Read access is enough for open and close.
+allowed = []
+
+[unattended]
+# Skills `cx run` may start with nobody answering. Only open and close qualify.
+skills = ["open", "close"]
+"""
+
+VOICE_QUEUE = """\
+# Voice queue
+
+cursor: never
+
+One row per product flaw. The same flaw adds a quote and a count; it does not open a row.
+
+| Flaw | Quote | Account | Resolution | Count | Evidence | Proposal |
+|---|---|---|---|---|---|---|
+"""
+
+CONTEXT_INBOX = """\
+# Context inbox
+
+Facts about a customer with no store to go to yet. One per line: when, account, fact, author, source.
+"""
+
+RUN_PROMPT = """\
+Today is {today}. Run {skill} from this repository and follow it. Resolve its links from that file.
+
+This is an unattended run. Nobody will answer a question.
+- Read local/consent.toml first. Read nothing it does not allow, and call only the connectors it lists.
+- Write only to local/, voice-queue.md, and context-inbox.md. Edit no tracked file.
+- Send nothing and file nothing. Nothing leaves the company from this run.
+- Where the skill waits for a yes, do not wait. List it under "Waiting on you" at the end and move on.
+End with the board or the day note, as the skill says, and nothing after it."""
+
+
+def write_new(path, text):
+    """Write text to path unless it exists. Return True if written."""
+    if path.exists():
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return True
+
+
+def init_house(house=ROOT):
+    """Create the private files. Never overwrites. Returns (created, kept) as relative paths."""
+    created, kept = [], []
+
+    def note(path, made):
+        (created if made else kept).append(str(path.relative_to(house)))
+
+    for d in ("local/learnings/days", "local/runs"):
+        (house / d).mkdir(parents=True, exist_ok=True)
+    for src in sorted(OVERLAY_TEMPLATES.iterdir()):
+        if src.is_file():
+            dest = house / "local" / "overlay" / src.name
+            note(dest, write_new(dest, src.read_text(encoding="utf-8")))
+    index = house / "local" / "learnings" / "index.md"
+    note(index, write_new(index, (ROOT / "learnings" / "index.md").read_text(encoding="utf-8")))
+    for name, text in (("local/consent.toml", CONSENT), ("voice-queue.md", VOICE_QUEUE), ("context-inbox.md", CONTEXT_INBOX)):
+        note(house / name, write_new(house / name, text))
+    return created, kept
+
+
+def need_toml():
+    if tomllib is None:
+        raise CxError("this command needs Python 3.11 or newer (tomllib)")
+
+
+def load_toml(path):
+    need_toml()
+    with open(path, "rb") as f:
+        return tomllib.load(f)
+
+
+def load_consent(house=ROOT):
+    """The parsed consent file, or None if init has not run."""
+    path = house / "local" / "consent.toml"
+    if not path.exists():
+        return None
+    try:
+        return load_toml(path)
+    except tomllib.TOMLDecodeError as e:
+        raise CxError(f"cannot parse {path}: {e}")
+
+
+def allowed_connectors(consent):
+    names = (consent or {}).get("connectors", {}).get("allowed", [])
+    return [n for n in names if isinstance(n, str) and re.fullmatch(r"[A-Za-z0-9_-]+", n)]
+
+
+def configured_connectors(house=ROOT):
+    """Connector names from each host's config file. Names only: values are never read out."""
+    home = Path.home()
+    found = {}
+
+    def add(host, names):
+        for n in names:
+            found.setdefault(n, set()).add(host)
+
+    def json_servers(path, *keys):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        for k in keys:
+            data = data.get(k, {}) if isinstance(data, dict) else {}
+        return data if isinstance(data, dict) else {}
+
+    claude = home / ".claude.json"
+    add("claude", json_servers(claude, "mcpServers"))
+    add("claude", json_servers(claude, "projects", str(house), "mcpServers"))
+    add("claude", json_servers(house / ".mcp.json", "mcpServers"))
+    add("cursor", json_servers(home / ".cursor" / "mcp.json", "mcpServers"))
+    add("cursor", json_servers(house / ".cursor" / "mcp.json", "mcpServers"))
+    add("gemini", json_servers(home / ".gemini" / "settings.json", "mcpServers"))
+    codex = home / ".codex" / "config.toml"
+    if codex.exists() and tomllib is not None:
+        try:
+            add("codex", load_toml(codex).get("mcp_servers", {}))
+        except tomllib.TOMLDecodeError:
+            pass
+    return found
+
+
+def env_refs(text):
+    """Environment variable names referenced as ${env:NAME} or $NAME."""
+    return sorted(set(re.findall(r"\$\{env:([A-Z0-9_]+)\}", text)) | set(re.findall(r"\$([A-Z][A-Z0-9_]+)\b", text)))
+
+
+def git_ignored(house, rel):
+    try:
+        r = subprocess.run(["git", "-C", str(house), "check-ignore", "-q", rel], capture_output=True)
+    except OSError:
+        return None
+    return {0: True, 1: False}.get(r.returncode)
+
+
+def doctor(house=ROOT, models=MODELS):
+    """Return a list of (level, message) where level is ok, warn, or fail."""
+    out = []
+    ok = lambda m: out.append(("ok", m))
+    warn = lambda m: out.append(("warn", m))
+    fail = lambda m: out.append(("fail", m))
+
+    if tomllib is None:
+        fail("Python 3.11 or newer is needed for everything but `cx check`.")
+
+    ignored = {rel: git_ignored(house, rel) for rel in PRIVATE}
+    if None in ignored.values():
+        warn("Not a git checkout, or git is missing. Cannot confirm the private files stay out of git.")
+    elif all(ignored.values()):
+        ok("Private files are gitignored: " + ", ".join(PRIVATE))
+    else:
+        fail("Not gitignored, so customer data could be committed: " + ", ".join(r for r, v in ignored.items() if not v))
+
+    consent = None
+    if not (house / "local").is_dir():
+        fail("Not initialized. Run `scripts/cx init`.")
+    else:
+        missing = [n for n in ("local/consent.toml", "voice-queue.md", "context-inbox.md") if not (house / n).exists()]
+        if missing:
+            fail("Missing " + ", ".join(missing) + ". Run `scripts/cx init`; it only adds what is missing.")
+        else:
+            ok("Initialized: local/, consent, and both queues exist.")
+        try:
+            consent = load_consent(house)
+        except CxError as e:
+            fail(str(e))
+
+    if consent is not None:
+        skills = consent.get("unattended", {}).get("skills", [])
+        bad = [s for s in skills if s not in UNATTENDED]
+        if bad:
+            fail(f"consent.toml lists {', '.join(bad)} as unattended. Only {', '.join(UNATTENDED)} can run with nobody answering.")
+        reads = [k for k, v in consent.get("read", {}).items() if v]
+        ok("Consent recorded. Reads allowed: " + (", ".join(reads) or "none") + ". Connectors allowed: " + (", ".join(allowed_connectors(consent)) or "none") + ".")
+
+    if (house / "stack.md").exists() and (house / "local" / "assessment.md").exists():
+        ok("Set up: stack.md and local/assessment.md exist.")
+    else:
+        warn("Setup has not run. In Claude Code, `/cx-setup`. Elsewhere, \"Run the setup skill.\"")
+
+    overlay = house / "local" / "overlay"
+    if overlay.is_dir():
+        same = [p.name for p in sorted(OVERLAY_TEMPLATES.iterdir()) if p.is_file() and (overlay / p.name).exists()
+                and (overlay / p.name).read_bytes() == p.read_bytes()]
+        if same:
+            warn("Overlay still the template: " + ", ".join(same) + ". Setup step 7 fills it. Until then every grant is zero.")
+        else:
+            ok("Overlay filled in.")
+        mcp = overlay / "mcp.json"
+        if mcp.exists() and mcp.name not in same:
+            unset = [n for n in env_refs(mcp.read_text(encoding="utf-8")) if not os.environ.get(n)]
+            if unset:
+                warn("local/overlay/mcp.json needs environment variables that are not set: " + ", ".join(unset) + ".")
+
+    if consent is not None:
+        wanted = allowed_connectors(consent)
+        if wanted and not consent.get("read", {}).get("connector_config"):
+            warn("Connectors are allowed but reading connector config is not, so they cannot be checked. Set read.connector_config = true to check.")
+        elif wanted:
+            found = configured_connectors(house)
+            for name in wanted:
+                if name in found:
+                    ok(f"Connector {name} is configured in: {', '.join(sorted(found[name]))}.")
+                else:
+                    warn(f"Connector {name} is not in any config file cx can read. If it is a claude.ai connector, check with /mcp.")
+
+    try:
+        table = load_toml(models) if tomllib else {}
+    except (OSError, tomllib.TOMLDecodeError) as e:
+        fail(f"Cannot read {models.name}: {e}")
+        table = {}
+    harnesses = [h for h, spec in table.get("harness", {}).items() if shutil.which(spec.get("command", [""])[0])]
+    if harnesses:
+        ok("Harnesses on PATH: " + ", ".join(harnesses) + f". `cx run` uses {harnesses[0]} unless --harness or CX_HARNESS says otherwise.")
+    elif table:
+        warn("No agent harness on PATH (" + ", ".join(table.get("harness", {})) + "). `cx run` needs one.")
+    return out
+
+
+def cmd_init(args):
+    need_toml()
+    created, kept = init_house()
+    for rel in created:
+        print(f"created  {rel}")
+    if kept and not args.quiet:
+        print(f"kept     {len(kept)} existing file(s)")
+    print("Next: `scripts/cx doctor`, then run setup in your agent (`/cx-setup` in Claude Code).")
+    return 0
+
+
+def cmd_doctor(args):
+    results = doctor()
+    for level, message in results:
+        print(f"{level:<5} {message}")
+    return 1 if any(level == "fail" for level, _ in results) else 0
+
+
+def load_models(path=MODELS):
+    try:
+        return load_toml(path)
+    except OSError as e:
+        raise CxError(f"cannot read {path}: {e}")
+
+
+def pick_harness(models, name=None):
+    harnesses = models.get("harness", {})
+    name = name or os.environ.get("CX_HARNESS")
+    if name:
+        if name not in harnesses:
+            raise CxError(f"unknown harness {name!r}. models.toml has: {', '.join(harnesses)}")
+        return name
+    for h, spec in harnesses.items():
+        if shutil.which(spec.get("command", [""])[0]):
+            return h
+    raise CxError("no agent harness on PATH. Install one, or pass --harness to see the command with --dry-run.")
+
+
+def model_for(models, harness, skill, moment=None, today=None):
+    """Return (tier, model). An empty model means the harness default.
+
+    Friday's close does the weekly pass, so it takes the `friday` tier.
+    """
+    if skill == "close" and today is not None and today.weekday() == 4:
+        skill = "friday"
+    tier = models.get("skills", {}).get(skill, "standard")
+    if skill == "floor" and moment:
+        tier = models.get("moments", {}).get(moment, tier)
+    return tier, models.get("harness", {}).get(harness, {}).get(tier, "")
+
+
+def build_command(template, values, allow):
+    """Fill a models.toml command template.
+
+    {model} left empty drops the token and the flag before it. {allow} becomes one
+    argument per entry, and drops its flag when the list is empty.
+    """
+    cmd = []
+    for token in template:
+        if "{model}" in token and not values["model"]:
+            if cmd and cmd[-1].startswith("-"):
+                cmd.pop()
+            continue
+        if token == "{allow}":
+            if allow:
+                cmd.extend(allow)
+            elif cmd and cmd[-1].startswith("-"):
+                cmd.pop()
+            continue
+        cmd.append(token.format(**values))
+    # Kit and house are often the same folder. One --add-dir for it is enough.
+    out, seen, i = [], set(), 0
+    while i < len(cmd):
+        if cmd[i] == "--add-dir" and i + 1 < len(cmd):
+            if cmd[i + 1] not in seen:
+                seen.add(cmd[i + 1])
+                out += cmd[i:i + 2]
+            i += 2
+            continue
+        out.append(cmd[i])
+        i += 1
+    return out
+
+
+def run_plan(models, consent, skill, harness, kit=ROOT, house=ROOT, today=None):
+    """Everything `cx run` needs: (command, tier, model, scoped). Raises CxError on a refusal."""
+    if consent is None:
+        raise CxError("not initialized. Run `scripts/cx init`, then setup, first.")
+    if skill not in UNATTENDED:
+        raise CxError(f"{skill} waits on a person, so it does not run unattended. Open your agent and ask for it.")
+    if skill not in consent.get("unattended", {}).get("skills", []):
+        raise CxError(f"local/consent.toml does not list {skill} under [unattended] skills.")
+    spec = models["harness"][harness]
+    today = today or datetime.date.today()
+    tier, model = model_for(models, harness, skill, today=today)
+    prompt = RUN_PROMPT.format(skill=SKILL_FILES[skill], today=today.strftime("%A %Y-%m-%d"))
+    scoped = "{allow}" in spec["command"]
+    allow = list(spec.get("allow", [])) + [f"mcp__{n}" for n in allowed_connectors(consent)]
+    values = {"prompt": prompt, "model": model, "kit": str(kit), "house": str(house)}
+    return build_command(spec["command"], values, allow), tier, model, scoped
+
+
+def cmd_models(args):
+    models = load_models()
+    harnesses = [args.harness] if args.harness else list(models.get("harness", {}))
+    for h in harnesses:
+        if h not in models.get("harness", {}):
+            raise CxError(f"unknown harness {h!r}")
+        print(f"[{h}]")
+        rows = [(skill, model_for(models, h, skill)) for skill in models.get("skills", {})]
+        rows += [(f"floor:{m}", model_for(models, h, "floor", m)) for m in models.get("moments", {})]
+        width = max(len(name) for name, _ in rows)
+        for name, (tier, model) in rows:
+            print(f"  {name:<{width}}  {tier:<9} {model or '(harness default)'}")
+    return 0
+
+
+def cmd_run(args):
+    models = load_models()
+    harness = pick_harness(models, args.harness)
+    command, tier, model, scoped = run_plan(models, load_consent(), args.skill, harness)
+    if not scoped:
+        print(f"cx: {harness} cannot scope tools per run. The consent rules reach it through the prompt only.", file=sys.stderr)
+    if args.dry_run:
+        print(shlex.join(command))
+        return 0
+    log = ROOT / "local" / "runs" / f"{datetime.date.today().isoformat()}-{args.skill}.md"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    print(f"cx: {args.skill} on {harness}, {tier} tier, {model or 'harness default'}. Output also goes to {log.relative_to(ROOT)}", file=sys.stderr)
+    try:
+        proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, text=True)
+    except OSError as e:
+        raise CxError(f"cannot start {command[0]}: {e}")
+    with open(log, "a", encoding="utf-8") as f:
+        f.write(f"\n<!-- {datetime.datetime.now().isoformat(timespec='seconds')} {harness} {model or 'default'} -->\n")
+        for line in proc.stdout:
+            sys.stdout.write(line)
+            f.write(line)
+    return proc.wait()
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="cx", description="Helpers for the agentic CX manual.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -231,10 +654,22 @@ def main(argv=None):
     check.add_argument("--strict", action="store_true", help="treat warnings as errors")
     check.add_argument("--quiet", action="store_true", help="no summary line")
     check.add_argument("--lexicon", help="path to a different lexicon file")
+    init = sub.add_parser("init", help="create local/, the overlay, the queues, and local/consent.toml; never overwrites")
+    init.add_argument("--quiet", action="store_true", help="do not count the files kept")
+    sub.add_parser("doctor", help="say what is set up, what is missing, and the next step")
+    models = sub.add_parser("models", help="print which model runs which skill, per harness")
+    models.add_argument("--harness", help="one harness from models.toml")
+    run = sub.add_parser("run", help="run a skill unattended, within local/consent.toml")
+    run.add_argument("skill", choices=sorted(SKILL_FILES), help="open or close; the others wait on a person")
+    run.add_argument("--harness", help="a harness from models.toml (default: CX_HARNESS, else the first on PATH)")
+    run.add_argument("--dry-run", action="store_true", help="print the command instead of running it")
     args = parser.parse_args(argv)
-    if args.command == "check":
-        return cmd_check(args)
-    return 2
+    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run}
+    try:
+        return commands[args.command](args)
+    except CxError as e:
+        print(f"cx: {e}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
