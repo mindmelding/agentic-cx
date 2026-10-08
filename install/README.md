@@ -2,6 +2,14 @@
 
 This manual is a folder of Markdown that your agent reads. There is nothing to build. Installing it means putting the repo where your agent works and running the setup skill once.
 
+```
+git clone https://github.com/mindmelding/agentic-cx.git && cd agentic-cx
+scripts/cx init      # the private files: local/, the overlay, the queues, consent
+scripts/cx doctor    # what is set up, what is missing, the next step
+```
+
+Then open your agent in the repo and run setup. `cx` needs Python 3.11 or newer and nothing else.
+
 ## Three steps
 
 **1. Get the repo.**
@@ -12,6 +20,8 @@ cd agentic-cx
 ```
 
 Your company's material never lands in tracked files. The setup skill writes it to `stack.md`, `voice-queue.md`, `context-inbox.md`, and `local/`, which are gitignored. A public clone is fine. If you want your notes versioned, keep `local/` in a separate private repo.
+
+Then `scripts/cx init`. It creates those files from the templates, with a `local/consent.toml` that allows nothing yet, and never overwrites one that exists.
 
 **2. Open your agent in the repo.** Each host finds the manual through a file it already reads:
 
@@ -28,6 +38,10 @@ Your company's material never lands in tracked files. The setup skill writes it 
 
 Setup works better with your customer data connected: the CRM or account store, the support desk or inbox, the tracker product uses. Connect them in your agent host first, so setup can find them. See [context-layer.md](context-layer.md).
 
+## The spec check, on its own
+
+The [documentation](../responsibilities/documentation.md) check runs in your product repo's CI, with no setup: a GitHub Action that names the specs a pull request touched and holds a moved `never` line for a person. See [spec-check.md](spec-check.md).
+
 ## Two other ways to use it
 
 - **Without an agent.** Read [`README.md`](../README.md) and the [self-check](../assessment/index.html). The manual is written for people first.
@@ -35,15 +49,26 @@ Setup works better with your customer data connected: the CRM or account store, 
 
 ## Running the day on a schedule
 
-The skills are meant to be run by a person at the start and end of the day. If you want open and close to run on their own, call your host headless from a scheduler:
+The skills are meant to be run by a person at the start and end of the day. Open and close can also run on their own, from a scheduler:
 
 ```
-# Weekdays 8:45 and 17:45, from the repo root
-45 8  * * 1-5  cd ~/agentic-cx && claude -p "Run skills/open/SKILL.md"
-45 17 * * 1-5  cd ~/agentic-cx && claude -p "Run skills/close/SKILL.md"
+# Weekdays 8:45 and 17:45
+45 8  * * 1-5  ~/agentic-cx/scripts/cx run open
+45 17 * * 1-5  ~/agentic-cx/scripts/cx run close
 ```
 
-Codex: `codex exec "Run skills/open/SKILL.md"`. Give a scheduled run read access only, and no permission to send anything. [`models.toml`](../models.toml) says which tier of model suits each skill. Of the `cx` commands it mentions, only `scripts/cx check` exists so far.
+`cx run` picks the first agent host on your PATH (or `--harness`, or `CX_HARNESS`), the model tier from [`models.toml`](../models.toml), and Friday's tier for Friday's close. It writes the output to `local/runs/` as well as printing it. `--dry-run` prints the command instead.
+
+What a run may do comes from `local/consent.toml`, not from the prompt alone:
+
+- Only open and close run unattended. Setup, floor, triage, and refresh wait on a person, and `cx run` refuses them.
+- On Claude Code, the run may edit only `local/`, `voice-queue.md`, and `context-inbox.md`, and call only the connectors consent lists. Anything else is denied, because nobody is there to approve it.
+- Other hosts cannot scope tools per run. Codex runs in its workspace sandbox. For the rest, the rules reach the agent through the prompt, and `cx run` says so.
+- Nothing is sent and nothing is filed. What would need a yes is listed under "Waiting on you."
+
+## What is waiting
+
+`scripts/cx status` reads the state files and prints a short board: the stack, the voice queue and its cursor, the context inbox, the last day note, and the last scheduled runs. `--json` gives the same to other tools. `scripts/cx doctor` names any line in those files it cannot read.
 
 ## Staying current
 

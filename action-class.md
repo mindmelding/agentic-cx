@@ -21,6 +21,8 @@ Every class carries:
 | Reversible | Whether an instance can be undone in one step, and by whom. Irreversible classes never run silently. |
 | Sources | The code paths that implement it. A change here marks the spec unverified. |
 
+A copy to start from is [`templates/spec/answer_behavior_question.yaml`](templates/spec/answer_behavior_question.yaml). `cx spec new <class>` writes a blank one.
+
 ```yaml
 class: answer_behavior_question
 fires_when: someone on the team asks how people are using their product

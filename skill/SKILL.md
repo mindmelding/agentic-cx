@@ -23,6 +23,8 @@ It never reads secret values, production data, or customer records. Customer wor
 
 If they decline a source, skip it and ask about that part instead.
 
+Record the answers in `local/consent.toml` (run `scripts/cx init` first if it does not exist): `read.past_chats`, `read.connector_config`, and `read.product_repo` as a path. Unattended runs read that file instead of asking, so a no stays a no.
+
 ## 1. Look (silent)
 
 **Past chats and memory.** Read what the host exposes. Look for the operator's title, team, recurring work, the tools they name, and what they complain about.
@@ -63,6 +65,7 @@ Only what nothing on disk answered. Offer a default they can accept with "yes." 
 - Which tools are inward only: summaries, deflection, QA on the team's own queue.
 - Whether product has a tracker CX can file into, and who on product owns the line in [`../boundary.md`](../boundary.md).
 - For each `partial` or `absent` capability: where it lives today, if anywhere, who may write it, and whether they will take the default in `tools.md`.
+- Which connected tools open and close may read on a schedule, with nobody watching. Default: none. Write the names to `connectors.allowed` in `local/consent.toml`. Read access is enough.
 - What they would show their CEO to prove CX worked last quarter. The answer says which old metrics they are still reporting.
 - How the product is priced. Run the interview in [`../pricing.md`](../pricing.md#interview), one question per turn, after looking at the pricing page and any contract they share.
 
@@ -96,7 +99,7 @@ Also note, for each, whether CX or product holds it today, and whether that matc
 
 ## 5. Write
 
-**`stack.md`** at the root of this repo. One section per responsibility, then `inward`:
+**`stack.md`** at the root of this repo. Start from [`../templates/house/state/stack.md`](../templates/house/state/stack.md): front matter with `updated` and `ledger_level`, one section per responsibility with a line for every capability in `tools.md`, then `Inward`. Keep the capability names as they are. Replace each `absent, not yet assessed` with what you found:
 
 ```markdown
 ## Context
@@ -104,6 +107,8 @@ Also note, for each, whether CX or product holds it today, and whether that matc
 - Citation log: absent, accept default, `context_cited` on the ledger
 - Correction path: partial, memories are editable in admin, no customer path yet
 ```
+
+`scripts/cx doctor` names any line it cannot read. Fix those before reading the assessment back.
 
 **`local/assessment.md`**, the gap report:
 

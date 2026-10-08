@@ -56,6 +56,7 @@ The item:
 | Count | How many times this flaw has shown up. |
 | Evidence | Links to the message, the call, or the session. |
 | Proposal | Pass, or hold. |
+| State | Open until a person decides. Then held, with the reason, or passed, with the link. |
 
 The issue, filed only on pass:
 

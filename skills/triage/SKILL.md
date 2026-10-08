@@ -9,13 +9,13 @@ Read [`responsibilities/voice.md`](../../responsibilities/voice.md) and [`respon
 
 ## Voice
 
-For each open row in `voice-queue.md`:
+For each row in `voice-queue.md` whose `State` is `open`:
 
 1. Show the flaw, the quote, the count, the resolution, and whether an issue already exists.
 2. Ask: pass, or hold.
-3. On hold, write the reason on the row. Leave it in the queue.
+3. On hold, set `State` to `held: <the reason>`. Leave it in the queue.
 4. On pass, show the issue in the voice page's shape. File it only after the person says yes. If an issue already covers it, comment with the new quote and the new count instead of opening another.
-5. Mark the row passed, with the link.
+5. Set `State` to `passed: <the issue link>`.
 
 A flaw that has never been passed does not get filed on its own. New evidence on a flaw already passed can be added, and the person is told.
 

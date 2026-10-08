@@ -6,7 +6,7 @@ It is not a guide to putting an AI agent in front of your support queue. That is
 
 ## Get started
 
-Clone the repo, open your agent in it, and run the setup skill. Per-host steps are in [`install/`](install/README.md). To see where your team stands first, without installing anything, use the [self-check](assessment/index.html).
+Clone the repo, run `scripts/cx init`, open your agent in it, and run the setup skill. `scripts/cx doctor` says what is still missing. Per-host steps are in [`install/`](install/README.md). To see where your team stands first, without installing anything, use the [self-check](assessment/index.html).
 
 ## The shift
 

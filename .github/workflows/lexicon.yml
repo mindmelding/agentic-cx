@@ -17,3 +17,5 @@ jobs:
         run: python3 scripts/test_cx.py
       - name: Gold replies and template examples
         run: scripts/cx check --gold --templates
+      - name: Example spec
+        run: scripts/cx spec lint --specs templates/spec --no-source-check

@@ -3,6 +3,7 @@
 ```
 git clone https://github.com/mindmelding/agentic-cx.git
 cd agentic-cx
+scripts/cx init
 claude
 ```
 
@@ -41,6 +42,8 @@ Check with `/mcp` inside a session. More in [context-layer.md](context-layer.md)
 
 Setup asks before reading anything, but Claude Code will also prompt for file reads outside the repo, such as past transcripts under `~/.claude/projects/`. Approve them one at a time the first run. Do not run setup in a mode that skips permission prompts.
 
+`.claude/settings.json` pre-approves the `cx` helper commands and denies reads of `.env` files. Scheduled runs get their own, narrower allow list from `cx run`.
+
 ## Check it worked
 
-After `/cx-setup`, `stack.md` and `local/assessment.md` exist and `git status` shows neither.
+`scripts/cx doctor`. After `/cx-setup` it reports no failures: the private files exist, are gitignored, and `stack.md` and `local/assessment.md` are written.

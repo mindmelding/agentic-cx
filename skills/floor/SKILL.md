@@ -31,7 +31,7 @@ The playbook slug is part of the action. Record who held it, `agent` or `person`
 Do not wait for close.
 
 - A fact about them goes to context, the same way [open](../open/SKILL.md) writes a fact.
-- A bug, a feature request, or our mistake also becomes or updates one row in `voice-queue.md`. The reply can still go out. The flaw is not only a reply.
+- A bug, a feature request, or our mistake also becomes or updates one row in `voice-queue.md`, in the shape open uses. The reply can still go out. The flaw is not only a reply.
 - An edit a person made to the agent's draft is a lesson. If it would change the next draft, one line in the day note. If the agent got it wrong in a way a test could catch, propose an eval case.
 - A phrase they used, or a reply you would not have written the same way twice, gets one line in today's day note under `local/learnings/days/`. Create the file from the sections in [close](../close/SKILL.md) if it is not there yet. Include the moment slug.
 
