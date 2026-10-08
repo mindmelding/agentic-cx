@@ -12,6 +12,8 @@ Any agent that can read files in a folder can run this manual. The entry point i
 
 Then say "Run the setup skill."
 
+A host that speaks MCP can skip all of this and connect to the manual directly: [mcp.md](mcp.md).
+
 ## Why not install the skills on their own
 
 Tools that install Agent Skills into a global folder copy each `SKILL.md` out of the repo. These skills link to the manual around them (the floor canon, the responsibility pages, the templates), and those links break once the file is moved. Work from the clone.

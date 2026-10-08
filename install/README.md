@@ -10,6 +10,8 @@ scripts/cx doctor    # what is set up, what is missing, the next step
 
 Then open your agent in the repo and run setup. `cx` needs Python 3.11 or newer and nothing else.
 
+**Or connect any host over MCP**, and keep your company's files in their own folder, apart from the manual: [mcp.md](mcp.md). Same skills, same rules, any model.
+
 ## Three steps
 
 **1. Get the repo.**
@@ -76,4 +78,4 @@ What a run may do comes from `local/consent.toml`, not from the prompt alone:
 
 ## Moving to another machine or agent
 
-Copy `local/`, `stack.md`, `voice-queue.md`, and `context-inbox.md` into a fresh clone. That is everything the manual knows about your company.
+Copy `local/`, `stack.md`, `voice-queue.md`, and `context-inbox.md` into a fresh clone, or into a folder `CX_HOUSE` points at. That is everything the manual knows about your company. Another agent host needs nothing moved: connect it to the same house over [MCP](mcp.md).

@@ -4,6 +4,7 @@ import importlib.machinery
 import importlib.util
 import datetime
 import io
+import json
 import shutil
 import subprocess
 import sys
@@ -499,6 +500,147 @@ class StateParse(unittest.TestCase):
         self.write("voice-queue.md", "| Short | row |\n")
         warnings = [m for level, m in cx.doctor(self.house) if level == "warn"]
         self.assertTrue(any(m.startswith("voice-queue.md:") and "cells" in m for m in warnings))
+
+
+
+class House(unittest.TestCase):
+    def test_defaults_to_the_repo(self):
+        with mock.patch.dict(cx.os.environ, {"CX_HOUSE": ""}):
+            self.assertEqual(cx.house_dir(), cx.ROOT)
+
+    def test_cx_house_moves_it(self):
+        house = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, house)
+        with mock.patch.dict(cx.os.environ, {"CX_HOUSE": str(house)}):
+            self.assertEqual(cx.house_dir(), house.resolve())
+
+    def test_a_house_outside_git_passes_doctor(self):
+        house = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, house)
+        cx.init_house(house)
+        results = cx.doctor(house)
+        self.assertNotIn("fail", {level for level, _ in results})
+        self.assertTrue(any("outside any git repository" in m for _, m in results))
+
+    def test_run_points_at_the_kit_and_works_in_the_house(self):
+        command, *_ = cx.run_plan(MODELS, consent(), "open", "claude", kit=Path("/kit"), house=Path("/house"), today=THURSDAY)
+        prompt = command[command.index("-p") + 1]
+        self.assertIn("Run /kit/skills/open/SKILL.md", prompt)
+        self.assertEqual(command.count("--add-dir"), 2)
+
+
+def rpc(server, method, params=None, mid=1):
+    message = {"jsonrpc": "2.0", "id": mid, "method": method}
+    if params is not None:
+        message["params"] = params
+    return server.handle(message)
+
+
+def tool(server, name, **arguments):
+    result = rpc(server, "tools/call", {"name": name, "arguments": arguments})["result"]
+    return result["content"][0]["text"], result["isError"]
+
+
+class Mcp(unittest.TestCase):
+    def setUp(self):
+        self.house = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.house)
+        cx.init_house(self.house)
+        self.server = cx.McpServer(house=self.house)
+
+    def test_initialize_echoes_the_version_and_names_the_rules(self):
+        result = rpc(self.server, "initialize", {"protocolVersion": "2025-03-26"})["result"]
+        self.assertEqual(result["protocolVersion"], "2025-03-26")
+        self.assertEqual(set(result["capabilities"]), {"resources", "prompts", "tools"})
+        self.assertIn("Customer data never enters git", result["instructions"])
+
+    def test_notifications_get_no_reply(self):
+        self.assertIsNone(self.server.handle({"jsonrpc": "2.0", "method": "notifications/initialized"}))
+
+    def test_unknown_method(self):
+        self.assertEqual(rpc(self.server, "sampling/createMessage")["error"]["code"], -32601)
+
+    def test_resources_are_the_manual_and_never_private_files(self):
+        uris = [r["uri"] for r in rpc(self.server, "resources/list")["result"]["resources"]]
+        self.assertIn("cx://manual/skills/open/SKILL.md", uris)
+        self.assertIn("cx://manual/templates/house/state/stack.md", uris)
+        for private in ("stack.md", "voice-queue.md", "context-inbox.md"):
+            self.assertNotIn("cx://manual/" + private, uris)
+        self.assertFalse(any(u.startswith("cx://manual/local/") or "/.git" in u for u in uris))
+        text = rpc(self.server, "resources/read", {"uri": "cx://manual/routines.md"})["result"]["contents"][0]["text"]
+        self.assertTrue(text.startswith("# Routines"))
+
+    def test_links_resolve_from_the_file_they_are_in(self):
+        text, error = tool(self.server, "manual_read", path="../../routines.md", **{"from": "skills/open/SKILL.md"})
+        self.assertFalse(error)
+        self.assertIn("# Routines", text)
+        text, error = tool(self.server, "manual_read", path="floor/moments/first-reply")
+        self.assertFalse(error)
+
+    def test_nothing_outside_the_manual(self):
+        for path in ("../../../etc/passwd", "stack.md", "local/consent.toml", ".git/config", "/etc/passwd"):
+            _, error = tool(self.server, "manual_read", path=path)
+            self.assertTrue(error, path)
+
+    def test_prompts_are_the_skills(self):
+        names = [p["name"] for p in rpc(self.server, "prompts/list")["result"]["prompts"]]
+        self.assertEqual(names, list(cx.SKILL_FILES))
+        text = rpc(self.server, "prompts/get", {"name": "open"})["result"]["messages"][0]["content"]["text"]
+        self.assertIn("# Open", text)
+        self.assertIn(str(self.house), text)
+        self.assertNotIn("name: cx-open", text)
+        self.assertEqual(rpc(self.server, "prompts/get", {"name": "nope"})["error"]["code"], -32602)
+
+    def test_lexicon_and_search(self):
+        text, _ = tool(self.server, "lexicon_check", text="Great question! We leverage it.")
+        self.assertTrue(text.startswith("FAIL"))
+        text, _ = tool(self.server, "lexicon_check", text="Fixed on our side. The import runs again.")
+        self.assertEqual(text, "PASS")
+        text, _ = tool(self.server, "manual_search", query="context floor", limit=3)
+        self.assertEqual(len(text.splitlines()), 4)
+
+    def test_status_and_doctor_read_the_house(self):
+        text, error = tool(self.server, "cx_status")
+        self.assertFalse(error)
+        self.assertIn(f"House: {self.house}", text)
+        text, _ = tool(self.server, "cx_doctor")
+        self.assertIn("Initialized", text)
+
+    def test_a_broken_lexicon_is_an_error_not_an_exit(self):
+        with mock.patch.object(cx, "load_lexicon", side_effect=SystemExit("cx: lexicon is missing blocks")):
+            reply = rpc(self.server, "tools/call", {"name": "lexicon_check", "arguments": {"text": "x"}})
+        self.assertEqual(reply["error"]["code"], -32603)
+
+    def test_serve_over_stdio(self):
+        lines = [json.dumps({"jsonrpc": "2.0", "id": 1, "method": "ping"}), "not json",
+                 json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"})]
+        out = io.StringIO()
+        self.server.serve(io.StringIO("\n".join(lines) + "\n"), out)
+        replies = [json.loads(l) for l in out.getvalue().splitlines()]
+        self.assertEqual(replies[0], {"jsonrpc": "2.0", "id": 1, "result": {}})
+        self.assertEqual(replies[1]["error"]["code"], -32700)
+        self.assertEqual(len(replies), 2)
+
+
+class McpConfig(unittest.TestCase):
+    def test_each_host_gets_a_working_snippet(self):
+        house = Path("/srv/acme-cx")
+        for host in cx.MCP_HOSTS:
+            text = cx.mcp_config(host, house)
+            self.assertIn("mcp", text)
+            self.assertIn("/srv/acme-cx", text)
+            body = "\n".join(l for l in text.splitlines() if not l.startswith(("//", "# ")))
+            if host == "claude":
+                self.assertTrue(text.startswith("claude mcp add agentic-cx --scope user -e CX_HOUSE=/srv/acme-cx -- "))
+            elif host == "codex":
+                self.assertEqual(cx.tomllib.loads(body)["mcp_servers"]["agentic-cx"]["env"]["CX_HOUSE"], "/srv/acme-cx")
+            else:
+                data = json.loads(body)
+                server = (data.get("servers") or data["mcpServers"])["agentic-cx"]
+                self.assertEqual(server["args"][-2:], ["mcp", "serve"])
+
+    def test_without_a_house_there_is_no_env(self):
+        self.assertNotIn("CX_HOUSE", cx.mcp_config("json"))
 
 
 if __name__ == "__main__":

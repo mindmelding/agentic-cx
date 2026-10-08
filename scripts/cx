@@ -12,6 +12,9 @@
     scripts/cx spec lint               check the spec register: fields, rungs, sources that exist
     scripts/cx spec check --base main  name the specs a change touched and the doc decision each needs
 
+    scripts/cx mcp config claude       print the MCP setup for a host: claude, codex, cursor, gemini, vscode, json
+    scripts/cx mcp serve               the MCP server itself, over stdio. Hosts start it
+
     scripts/cx check reply.md          check one or more files against the lexicon
     scripts/cx check - < reply.md      check stdin
     scripts/cx check --gold            check every gold reply in floor/evals/cases/
@@ -245,8 +248,15 @@ def cmd_check(args):
 
 # --- Setup and unattended runs ------------------------------------------------
 #
-# The house is where one company's private files live: stack.md, the two queues,
-# and local/. It is the repo root, and all of it is gitignored.
+# The kit is the manual: this repo. The house is where one company's private files
+# live: stack.md, the two queues, and local/. In a clone the house is the repo root,
+# and all of it is gitignored. Set CX_HOUSE to keep it anywhere else, which is what
+# an install that updates the kit in place needs.
+
+
+def house_dir():
+    value = os.environ.get("CX_HOUSE", "").strip()
+    return Path(value).expanduser().resolve() if value else ROOT
 
 class CxError(Exception):
     """A refusal or a config problem. main() prints it and exits 2."""
@@ -294,7 +304,10 @@ skills = ["open", "close"]
 """
 
 RUN_PROMPT = """\
-Today is {today}. Run {skill} from this repository and follow it. Resolve its links from that file.
+Today is {today}. Run {skill} and follow it. Resolve its links from that file.
+
+The working directory is the house, where this company's private files live: stack.md,
+voice-queue.md, context-inbox.md, and local/. Paths to those in the skill are relative to it.
 
 This is an unattended run. Nobody will answer a question.
 - Read local/consent.toml first. Read nothing it does not allow, and call only the connectors it lists.
@@ -400,6 +413,14 @@ def env_refs(text):
     return sorted(set(re.findall(r"\$\{env:([A-Z0-9_]+)\}", text)) | set(re.findall(r"\$([A-Z][A-Z0-9_]+)\b", text)))
 
 
+def in_git_repo(path):
+    try:
+        r = subprocess.run(["git", "-C", str(path), "rev-parse", "--is-inside-work-tree"], capture_output=True, text=True)
+    except OSError:
+        return None
+    return r.returncode == 0 and r.stdout.strip() == "true"
+
+
 def git_ignored(house, rel):
     try:
         r = subprocess.run(["git", "-C", str(house), "check-ignore", "-q", rel], capture_output=True)
@@ -418,8 +439,14 @@ def doctor(house=ROOT, models=MODELS):
     if tomllib is None:
         fail("Python 3.11 or newer is needed for everything but `cx check`.")
 
+    ok(f"House: {house}" + ("" if house == ROOT else " (from CX_HOUSE)") + f". Manual: {ROOT}.")
+    if house != ROOT and not house.is_dir():
+        fail(f"CX_HOUSE points at {house}, which does not exist. Create it, then `scripts/cx init`.")
+        return out
     ignored = {rel: git_ignored(house, rel) for rel in PRIVATE}
-    if None in ignored.values():
+    if house != ROOT and in_git_repo(house) is False:
+        ok("The house is outside any git repository, so nothing in it can be committed by accident.")
+    elif None in ignored.values():
         warn("Not a git checkout, or git is missing. Cannot confirm the private files stay out of git.")
     elif all(ignored.values()):
         ok("Private files are gitignored: " + ", ".join(PRIVATE))
@@ -503,7 +530,11 @@ def doctor(house=ROOT, models=MODELS):
 
 def cmd_init(args):
     need_toml()
-    created, kept = init_house()
+    house = house_dir()
+    house.mkdir(parents=True, exist_ok=True)
+    created, kept = init_house(house)
+    if house != ROOT:
+        print(f"house    {house}")
     for rel in created:
         print(f"created  {rel}")
     if kept and not args.quiet:
@@ -513,7 +544,7 @@ def cmd_init(args):
 
 
 def cmd_doctor(args):
-    results = doctor()
+    results = doctor(house_dir())
     for level, message in results:
         print(f"{level:<5} {message}")
     return 1 if any(level == "fail" for level, _ in results) else 0
@@ -596,7 +627,8 @@ def run_plan(models, consent, skill, harness, kit=ROOT, house=ROOT, today=None):
     spec = models["harness"][harness]
     today = today or datetime.date.today()
     tier, model = model_for(models, harness, skill, today=today)
-    prompt = RUN_PROMPT.format(skill=SKILL_FILES[skill], today=today.strftime("%A %Y-%m-%d"))
+    skill_path = SKILL_FILES[skill] if Path(kit) == Path(house) else str(Path(kit) / SKILL_FILES[skill])
+    prompt = RUN_PROMPT.format(skill=skill_path, today=today.strftime("%A %Y-%m-%d"))
     scoped = "{allow}" in spec["command"]
     allow = list(spec.get("allow", [])) + [f"mcp__{n}" for n in allowed_connectors(consent)]
     values = {"prompt": prompt, "model": model, "kit": str(kit), "house": str(house)}
@@ -621,17 +653,18 @@ def cmd_models(args):
 def cmd_run(args):
     models = load_models()
     harness = pick_harness(models, args.harness)
-    command, tier, model, scoped = run_plan(models, load_consent(), args.skill, harness)
+    house = house_dir()
+    command, tier, model, scoped = run_plan(models, load_consent(house), args.skill, harness, house=house)
     if not scoped:
         print(f"cx: {harness} cannot scope tools per run. The consent rules reach it through the prompt only.", file=sys.stderr)
     if args.dry_run:
         print(shlex.join(command))
         return 0
-    log = ROOT / "local" / "runs" / f"{datetime.date.today().isoformat()}-{args.skill}.md"
+    log = house / "local" / "runs" / f"{datetime.date.today().isoformat()}-{args.skill}.md"
     log.parent.mkdir(parents=True, exist_ok=True)
-    print(f"cx: {args.skill} on {harness}, {tier} tier, {model or 'harness default'}. Output also goes to {log.relative_to(ROOT)}", file=sys.stderr)
+    print(f"cx: {args.skill} on {harness}, {tier} tier, {model or 'harness default'}. Output also goes to {log}", file=sys.stderr)
     try:
-        proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(command, cwd=house, stdout=subprocess.PIPE, text=True)
     except OSError as e:
         raise CxError(f"cannot start {command[0]}: {e}")
     with open(log, "a", encoding="utf-8") as f:
@@ -883,7 +916,7 @@ def status_lines(status, problems, today=None):
 
 
 def cmd_status(args):
-    status, problems = house_status()
+    status, problems = house_status(house_dir())
     if args.json:
         clean = json.loads(json.dumps(status, default=str))
         clean["problems"] = [{"file": f, "line": n, "message": m} for f, n, m in problems]
@@ -1284,6 +1317,326 @@ def cmd_spec(args):
     return 1 if (blocking or errors) else 0
 
 
+# --- MCP server: the manual for any agent host ---------------------------------
+#
+# `cx mcp serve` speaks the Model Context Protocol over stdio, with nothing but the
+# standard library. Any host that supports MCP gets the same manual: its files as
+# resources, the skills as prompts, and a few tools. Manual paths resolve against
+# the kit, so the relative links inside a skill still work. Private files stay in
+# the house and are never served: the host reads and writes those with its own
+# file tools, after the same yes as always.
+
+MCP_NAME = "agentic-cx"
+MCP_URI = "cx://manual/"
+MCP_TEXT_SUFFIXES = (".md", ".toml", ".yaml", ".yml", ".json", ".txt")
+
+
+def manual_files(kit=ROOT):
+    """Tracked text files of the manual, as relative paths. Never a private file."""
+    try:
+        listed = git(kit, "ls-files").splitlines()
+    except CxError:
+        listed = [str(p.relative_to(kit)) for p in kit.rglob("*") if p.is_file() and ".git" not in p.parts]
+    private = {p.rstrip("/") for p in PRIVATE}
+    keep = []
+    for rel in listed:
+        first = rel.split("/", 1)[0]
+        if first in private or rel in private or first.startswith(".") or not rel.endswith(MCP_TEXT_SUFFIXES):
+            continue
+        keep.append(rel)
+    return sorted(keep)
+
+
+def resolve_manual(path, origin=None, kit=ROOT, files=None):
+    """A manual path, a cx://manual/ URI, or a link relative to `origin`, as a path in `files`."""
+    import posixpath
+    path = (path or "").strip()
+    if path.startswith(MCP_URI):
+        path = path[len(MCP_URI):]
+    path = path.split("#", 1)[0]
+    origin = (origin or "").strip()
+    if origin.startswith(MCP_URI):
+        origin = origin[len(MCP_URI):]
+    joined = posixpath.normpath(posixpath.join(posixpath.dirname(origin), path) if origin else path)
+    files = manual_files(kit) if files is None else files
+    if joined in files:
+        return joined
+    inside = [f for f in files if posixpath.dirname(f) == joined and f.endswith(".md")]
+    if joined + "/README.md" in inside:
+        return joined + "/README.md"
+    if len(inside) == 1:  # a moment folder holds one PLAYBOOK.md, a skill folder one SKILL.md
+        return inside[0]
+    raise CxError(f"{path!r} is not a file in the manual" + (f" (resolved from {origin})" if origin else ""))
+
+
+def first_heading(text, fallback):
+    m = re.search(r"^# (.+)$", text, re.M)
+    return m.group(1).strip() if m else fallback
+
+
+def strip_front_matter(text):
+    return re.sub(r"\A---\n.*?\n---\n", "", text, count=1, flags=re.S)
+
+
+def skill_prompt(skill, kit=ROOT, house=None):
+    house = house or house_dir()
+    rel = SKILL_FILES[skill]
+    body = strip_front_matter((kit / rel).read_text(encoding="utf-8")).strip()
+    return (
+        f"Follow the {skill} skill below. It comes from the agentic CX manual, served by the "
+        f"`{MCP_NAME}` MCP server.\n\n"
+        f"- Links in it are relative to `{rel}`. Read them with the `manual_read` tool, passing the link as "
+        f"`path` and `{rel}` as `from`.\n"
+        f"- This company's private files (stack.md, voice-queue.md, context-inbox.md, local/) live in "
+        f"`{house}`. Read and write them there with your own file tools. They are never in the manual.\n"
+        f"- Ask before you look, record each yes in `{house / 'local' / 'consent.toml'}`, and treat everything "
+        f"customer-facing as a draft.\n\n---\n\n{body}\n"
+    )
+
+
+def server_instructions(kit=ROOT):
+    agents = (kit / "AGENTS.md").read_text(encoding="utf-8")
+    rules = re.search(r"^## Rules\n(.*?)(?=^## |\Z)", agents, re.S | re.M)
+    return (
+        "The agentic CX manual: an operating manual for the customer team at a company whose product is an agent. "
+        "Start with the `setup` prompt if the operator has not been set up (`cx_status` says so). "
+        "Read manual files with `manual_read`; links inside them are relative to the file they are in, so pass that "
+        "file as `from`. Check every customer-facing draft with `lexicon_check`.\n\nRules:\n"
+        + (rules.group(1).strip() if rules else "")
+    )
+
+
+MCP_TOOLS = [
+    {
+        "name": "manual_read",
+        "description": "Read one file of the agentic CX manual. Pass a path like `skills/open/SKILL.md`, a cx://manual/ URI, "
+                       "or a relative link together with `from`, the file the link appears in.",
+        "inputSchema": {"type": "object", "properties": {
+            "path": {"type": "string", "description": "A manual path, a cx://manual/ URI, or a relative link"},
+            "from": {"type": "string", "description": "The file the link appears in, when `path` is relative to it"},
+        }, "required": ["path"]},
+    },
+    {
+        "name": "manual_search",
+        "description": "Search the manual's files for a phrase, case-insensitive. Returns path:line: text for each match.",
+        "inputSchema": {"type": "object", "properties": {
+            "query": {"type": "string"},
+            "limit": {"type": "integer", "description": "Most matches to return (default 30)"},
+        }, "required": ["query"]},
+    },
+    {
+        "name": "lexicon_check",
+        "description": "Check a customer-facing draft against the house lexicon: banned phrases, words, openers, and "
+                       "structural tells. Run it on every draft before showing it. On a violation, rewrite from the "
+                       "source, do not patch the sentence.",
+        "inputSchema": {"type": "object", "properties": {
+            "text": {"type": "string", "description": "The draft reply"},
+            "strict": {"type": "boolean", "description": "Treat warnings as failures"},
+        }, "required": ["text"]},
+    },
+    {
+        "name": "cx_status",
+        "description": "What is waiting for this company: the stack, the voice queue and its cursor, the context inbox, "
+                       "the last day note, and the last scheduled runs. A summary; no customer quotes.",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "cx_doctor",
+        "description": "What is set up, what is missing, and the next step for each.",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+]
+
+
+class McpServer:
+    def __init__(self, kit=ROOT, house=None):
+        self.kit = kit
+        self.house = house or house_dir()
+        self.files = manual_files(kit)
+
+    # Each handler returns a result or raises McpError.
+    def initialize(self, params):
+        # The server uses only resources, prompts, and tools, which every protocol
+        # version has, so it answers in the version the client asked for.
+        return {
+            "protocolVersion": params.get("protocolVersion") or "2025-06-18",
+            "capabilities": {"resources": {}, "prompts": {}, "tools": {}},
+            "serverInfo": {"name": MCP_NAME, "version": "0.1.0"},
+            "instructions": server_instructions(self.kit),
+        }
+
+    def resources_list(self, params):
+        out = []
+        for rel in self.files:
+            entry = {"uri": MCP_URI + rel, "name": rel, "mimeType": "text/markdown" if rel.endswith(".md") else "text/plain"}
+            out.append(entry)
+        return {"resources": out}
+
+    def resources_read(self, params):
+        rel = self.resolve(params.get("uri", ""))
+        return {"contents": [{"uri": MCP_URI + rel, "mimeType": "text/markdown" if rel.endswith(".md") else "text/plain",
+                              "text": (self.kit / rel).read_text(encoding="utf-8")}]}
+
+    def prompts_list(self, params):
+        prompts = []
+        for skill, rel in SKILL_FILES.items():
+            text = (self.kit / rel).read_text(encoding="utf-8")
+            m = re.search(r"^description:\s*(.+)$", text, re.M)
+            prompts.append({"name": skill, "description": m.group(1).strip() if m else first_heading(text, skill)})
+        return {"prompts": prompts}
+
+    def prompts_get(self, params):
+        name = params.get("name", "")
+        if name not in SKILL_FILES:
+            raise McpError(-32602, f"no prompt named {name!r}. Prompts: {', '.join(SKILL_FILES)}")
+        return {"description": f"The {name} skill", "messages": [
+            {"role": "user", "content": {"type": "text", "text": skill_prompt(name, self.kit, self.house)}}]}
+
+    def tools_list(self, params):
+        return {"tools": MCP_TOOLS}
+
+    def tools_call(self, params):
+        name, args = params.get("name", ""), params.get("arguments") or {}
+        handler = getattr(self, f"tool_{name}", None)
+        if handler is None:
+            raise McpError(-32602, f"no tool named {name!r}")
+        try:
+            text = handler(args)
+        except CxError as e:
+            return {"content": [{"type": "text", "text": str(e)}], "isError": True}
+        return {"content": [{"type": "text", "text": text}], "isError": False}
+
+    def resolve(self, path, origin=None):
+        try:
+            return resolve_manual(path, origin, self.kit, self.files)
+        except CxError as e:
+            raise McpError(-32602, str(e))
+
+    def tool_manual_read(self, args):
+        rel = resolve_manual(args.get("path", ""), args.get("from"), self.kit, self.files)
+        return f"<!-- {MCP_URI}{rel} -->\n" + (self.kit / rel).read_text(encoding="utf-8")
+
+    def tool_manual_search(self, args):
+        query = (args.get("query") or "").strip().lower()
+        if not query:
+            raise CxError("give a query")
+        limit = int(args.get("limit") or 30)
+        hits = []
+        for rel in self.files:
+            for n, line in enumerate((self.kit / rel).read_text(encoding="utf-8").splitlines(), 1):
+                if query in line.lower():
+                    hits.append(f"{rel}:{n}: {line.strip()[:200]}")
+                    if len(hits) >= limit:
+                        return "\n".join(hits) + f"\n(first {limit} matches)"
+        return "\n".join(hits) or f"No match for {query!r}."
+
+    def tool_lexicon_check(self, args):
+        findings = check_text(args.get("text") or "", load_lexicon(), "draft")
+        strict = bool(args.get("strict"))
+        errors = [f for f in findings if strict or not f.warning]
+        lines = [str(f).removeprefix("draft:") for f in findings]
+        verdict = "FAIL: rewrite from the source, do not patch the sentence." if errors else "PASS"
+        return "\n".join([verdict] + lines)
+
+    def tool_cx_status(self, args):
+        status, problems = house_status(self.house)
+        return f"House: {self.house}\n" + "\n".join(f"{label:<9} {text}" for label, text in status_lines(status, problems))
+
+    def tool_cx_doctor(self, args):
+        return "\n".join(f"{level:<5} {message}" for level, message in doctor(self.house))
+
+    METHODS = {
+        "initialize": "initialize", "ping": None,
+        "resources/list": "resources_list", "resources/read": "resources_read",
+        "prompts/list": "prompts_list", "prompts/get": "prompts_get",
+        "tools/list": "tools_list", "tools/call": "tools_call",
+    }
+
+    def handle(self, message):
+        """One JSON-RPC message in, one response out, or None for a notification."""
+        if not isinstance(message, dict) or message.get("jsonrpc") != "2.0":
+            return {"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "not a JSON-RPC 2.0 message"}}
+        if "id" not in message:
+            return None  # notifications/initialized, cancellations: nothing to say
+        method, mid = message.get("method", ""), message["id"]
+        if method not in self.METHODS:
+            return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"method not found: {method}"}}
+        try:
+            name = self.METHODS[method]
+            result = {} if name is None else getattr(self, name)(message.get("params") or {})
+        except McpError as e:
+            return {"jsonrpc": "2.0", "id": mid, "error": {"code": e.code, "message": str(e)}}
+        except (Exception, SystemExit) as e:  # a bug or a bad lexicon must not kill the host's session
+            print(f"cx mcp: {method} failed: {e!r}", file=sys.stderr)
+            return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32603, "message": f"internal error: {e}"}}
+        return {"jsonrpc": "2.0", "id": mid, "result": result}
+
+    def serve(self, stdin=None, stdout=None):
+        stdin, stdout = stdin or sys.stdin, stdout or sys.stdout
+        for line in stdin:
+            if not line.strip():
+                continue
+            try:
+                message = json.loads(line)
+            except ValueError:
+                reply = {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}}
+            else:
+                reply = self.handle(message)
+            if reply is not None:
+                stdout.write(json.dumps(reply) + "\n")
+                stdout.flush()
+
+
+class McpError(Exception):
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.code = code
+
+
+def mcp_launch(kit=ROOT):
+    """The command a host runs to start the server."""
+    return [sys.executable if Path(sys.executable).name.startswith("python") else "python3", str(kit / "scripts" / "cx"), "mcp", "serve"]
+
+
+def mcp_config(host, house=None, kit=ROOT):
+    """The setup for one host, as text to paste or a command to run."""
+    cmd = mcp_launch(kit)
+    env = {"CX_HOUSE": str(house)} if house else {}
+    if host == "claude":
+        flags = " ".join(f"-e {k}={shlex.quote(v)}" for k, v in env.items())
+        return f"claude mcp add {MCP_NAME} --scope user {flags + ' ' if flags else ''}-- {shlex.join(cmd)}"
+    if host == "codex":
+        lines = [f"[mcp_servers.{MCP_NAME}]", f"command = {json.dumps(cmd[0])}", f"args = {json.dumps(cmd[1:])}"]
+        if env:
+            lines.append("env = { " + ", ".join(f"{k} = {json.dumps(v)}" for k, v in env.items()) + " }")
+        return "# ~/.codex/config.toml\n" + "\n".join(lines)
+    server = {"command": cmd[0], "args": cmd[1:]}
+    if env:
+        server["env"] = env
+    if host == "vscode":
+        server = {"type": "stdio", **server}
+        return "// .vscode/mcp.json\n" + json.dumps({"servers": {MCP_NAME: server}}, indent=2)
+    where = {"cursor": "~/.cursor/mcp.json", "gemini": "~/.gemini/settings.json", "json": "your host's MCP settings"}[host]
+    return f"// {where}\n" + json.dumps({"mcpServers": {MCP_NAME: server}}, indent=2)
+
+
+MCP_HOSTS = ("claude", "codex", "cursor", "gemini", "vscode", "json")
+
+
+def cmd_mcp(args):
+    if args.mcp_command == "serve":
+        McpServer().serve()
+        return 0
+    if args.house:
+        house = Path(args.house).expanduser().resolve()
+    else:
+        house = house_dir() if os.environ.get("CX_HOUSE") else None
+    print(mcp_config(args.host, house))
+    if house is None:
+        print(f"\n# The house defaults to {ROOT}. Pass --house to keep the private files elsewhere.", file=sys.stderr)
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="cx", description="Helpers for the agentic CX manual.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1324,8 +1677,14 @@ def main(argv=None):
             p.add_argument("--body-file", help="the pull request description, for `doc: <class> = <disposition>` lines")
             p.add_argument("--require-disposition", action="store_true", help="fail on any touched spec with no disposition, not only a moved `never`")
             p.add_argument("--format", choices=("text", "markdown", "json"), default="text")
+    mcp = sub.add_parser("mcp", help="serve the manual over MCP to any agent host, or print a host's setup")
+    mcp_sub = mcp.add_subparsers(dest="mcp_command", required=True)
+    mcp_sub.add_parser("serve", help="speak MCP over stdio. Hosts start this; you do not run it by hand")
+    mcp_config_p = mcp_sub.add_parser("config", help="print the setup for one host")
+    mcp_config_p.add_argument("host", choices=MCP_HOSTS)
+    mcp_config_p.add_argument("--house", help="where the private files live (default: CX_HOUSE, else this repo)")
     args = parser.parse_args(argv)
-    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec, "status": cmd_status}
+    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec, "status": cmd_status, "mcp": cmd_mcp}
     try:
         return commands[args.command](args)
     except CxError as e:
