@@ -51,6 +51,7 @@ Leading numbers move this week. Lagging numbers confirm, months later, that the 
 | Self-onboarded share | Accounts that graduated with no human step-in | Outcome reached in window |
 | Passes accepted | Filed issues the product team took without a rewrite | Voice decision time |
 | Pages per class | Public pages / action classes | Pages removed this quarter |
+| Bridges retired | [Bridges](bridges.md) whose exit was met this quarter | Bridges opened, and any whose number rose |
 
 ## The ones that look good and lie
 

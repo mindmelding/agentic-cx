@@ -1,5 +1,7 @@
 # Tools
 
+Keep your stack. This page names what an agent product needs the stack to do, so setup can see which parts you already have and fill only the blanks.
+
 Tools are capabilities. A product name appears twice: as a signal a scan can recognize, and as the default when a company has nothing in that slot. The pages under `responsibilities/` stay vendor-neutral. Adaptation lives in `stack.md`, which the skill writes locally and which is gitignored.
 
 ## How a scan decides

@@ -2,6 +2,8 @@
 
 For CX teams at companies whose product is an agent. The customer delegates work to it, often talks to it directly, and may rarely meet a person. Support and success playbooks built for software a person operates measure the wrong things here. This is the operating manual that replaces them, written to be adopted by a new company as it stands and adapted to the tools that company already runs.
 
+It does not replace your stack. Keep the CRM, the help desk, the tracker, the docs site. The manual sits on top of what you run, fills the gaps an agent product opens up (the ledger, the rungs, the boundary, the queue), and gives a small team leverage it did not have. Where you cannot switch yet, a [bridge](bridges.md) keeps the old way running, counted, until the new one is ready.
+
 It is not a guide to putting an AI agent in front of your support queue. That is a different job, and well covered elsewhere.
 
 ## Get started
@@ -41,6 +43,7 @@ The manual uses these words the same way on every page.
 - [`roles.md`](roles.md). Support, success, onboarding, and documentation, and what each becomes.
 - [`boundary.md`](boundary.md). What CX builds, what product builds, and where work crosses.
 - [`queue.md`](queue.md). The one queue the team works, and how its own work earns autonomy.
+- [`bridges.md`](bridges.md). The old ways you keep while you move, each with a number that falls and an exit.
 - [`pricing.md`](pricing.md). How the billable unit meets the rung profile, and the interview to find out.
 - [`agent-customers.md`](agent-customers.md). When the thing calling your product is the customer's agent.
 

@@ -135,6 +135,8 @@ On a re-run, keep the old assessment and write a new dated one. The point is the
 - define the stall signals and the first-run question
 - fill the overlay (step 7)
 
+Any area that scored 1, the old way, also gets a bridge in `local/bridges.md`, in the shape in [`../bridges.md`](../bridges.md#a-bridge): what it keeps, what it waits on, the number that should fall, its baseline today, and its exit. The team keeps the old thing running, counted, while the new loop is built beside it.
+
 Work that product owns goes in as `blocked`, linked to the item that asks for it, so the plan shows the whole path. Also create `local/rungs.md` with every kind at its starting rung from [`../queue.md`](../queue.md#kinds), and an empty `local/log.md` and `local/rules.md`.
 
 ## 6. Read it back
@@ -143,7 +145,7 @@ In paragraphs, the way a colleague would say it. Not a table dump.
 
 1. Where they stand, in two sentences.
 2. The three biggest gaps, each with why it matters for an agent product and the smallest step to close it.
-3. The first loop, and how many setup items are in the queue.
+3. The first loop, how many setup items are in the queue, and the bridges, with the number each one starts at.
 
 Then ask one question: "Start working the plan now, or set up the floor first?" Working the plan is [triage](../skills/triage/SKILL.md). Setup items are worked the same way as every day's work after them.
 

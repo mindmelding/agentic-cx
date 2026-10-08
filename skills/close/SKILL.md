@@ -33,7 +33,8 @@ Read the week's lines in `local/log.md`. Then, in this order, asking before each
 2. **Rules.** For each kind where the same edit shows up three times in 30 days, propose a rule with its evidence. On a yes, add it to `local/rules.md` and write it where the next draft will read it.
 3. **Producers.** Where five items in a row from one source or kind were dropped, propose narrowing that producer. On a yes, it becomes a rule.
 4. **Expiring rules.** A rule past its expiry becomes an `upkeep` item.
-5. **Learnings.** Promote or discard the week's day notes. At most five.
-6. **Report.** The table and three numbers from [`queue.md`](../../queue.md#the-friday-report), in the day note.
+5. **Bridges.** Flag any bridge whose number has not moved in four weeks, and propose retiring any whose exit is met. See [bridges](../../bridges.md#tracking-them-down).
+6. **Learnings.** Promote or discard the week's day notes. At most five.
+7. **Report.** The table and three numbers from [`queue.md`](../../queue.md#the-friday-report), plus open bridges and how far each number has fallen, in the day note.
 
 Do not rewrite the manual. Do not file an issue from here. Filing is triage.

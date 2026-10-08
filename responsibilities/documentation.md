@@ -46,6 +46,8 @@ The first times a change like this ships, a person confirms "no documentation." 
 | Update | The code changed the boundary or the trigger. The spec changes with it. |
 | Remove | The product now says this, or does this. The page or guide comes down. |
 
+An existing help center rarely fits these on day one. Keep it, as a [bridge](../bridges.md): count the live pages, and take them down as each class's spec and the product's own answers replace them. A page written because inbound keeps asking something the product cannot answer yet is a bridge too, paired with the flaw that would make it unnecessary.
+
 A page or guide survives for a reason:
 
 | Form | Why it exists |
@@ -102,4 +104,4 @@ Markdown or YAML in the repo, one file per class, with a `sources` list. Render 
 
 ## Measures
 
-Share of `never` lines verified against production in the last week. Page count, and how many pages were removed because the product now speaks. A growing site is a finding, not a publishing win.
+Share of `never` lines verified against production in the last week. Page count, and how many pages were removed because the product now speaks. While the old help center is a bridge, its live page count against the baseline. A growing site is a finding, not a publishing win.

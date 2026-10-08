@@ -4,7 +4,7 @@ Everything this team has to do lands in one queue, and one loop works through it
 
 The queue runs on the same unit the manual asks the product to run on. Each item is an action of a known kind. Each kind sits on a rung. Every decision the operator makes is logged, and the log is what earns a kind its next rung. The team's own work compounds the way the product's should.
 
-Four files, all in `local/`, none committed:
+Five files, all in `local/`, none committed:
 
 | File | What it holds |
 |---|---|
@@ -12,6 +12,7 @@ Four files, all in `local/`, none committed:
 | `local/log.md` | One line per closed item: what was proposed and what the operator did |
 | `local/rungs.md` | The current rung for each kind, and when and why it moved |
 | `local/rules.md` | Rules learned from repeated edits, each with its evidence and expiry |
+| `local/bridges.md` | The old ways kept on purpose, each with a number that should fall and an exit. See [bridges](bridges.md) |
 
 ## An item
 
@@ -65,6 +66,9 @@ Each kind has a handler, a starting rung, and a ceiling. The ceilings are set he
 | `value` | A value story or a forwardable value note | [value](responsibilities/value.md) | Draft | **Draft** |
 | `setup` | A step from the setup plan | [setup](skill/SKILL.md) | Propose | **Draft** |
 | `upkeep` | A refresh row, a stale rule, a producer change | [refresh](skills/refresh/SKILL.md) | Draft | Act with notice |
+| `bridge` | Open, review, or retire a bridge | [bridges](bridges.md) | Draft | Act with notice |
+
+**Retiring a bridge customers can see** (a public page, a call they were promised) is sensitive.
 
 **Sensitive overrides the kind.** An item that touches money, personal data, account access, deletion, a `never` line, or anything sent outside the company is handled at propose, whatever its kind's rung. Its `sensitive` field says which.
 
