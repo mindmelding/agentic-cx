@@ -23,9 +23,12 @@ Five files, all in `local/`, none committed:
 - handler: floor/moments/onboarding-first-100-days
 - rung: draft
 - sensitive: no
+- opened: 2026-10-08
 - due: 2026-10-09
 - status: open
 ```
+
+Rungs are written `propose`, `draft`, `notice`, or `silent`. `touched:` is added the first time anyone works an item.
 
 A `setup` item also carries `done when:`, one line that says how anyone can tell it is finished.
 
@@ -40,9 +43,11 @@ Triage takes the highest band first, then the earliest due date, then the oldest
 3. **Stalls.** Onboarding stalls and silences.
 4. **Decisions waiting.** A flaw to pass or hold, a doc disposition, a promotion to propose.
 5. **Setup.** The plan from setup.
-6. **Upkeep.** Weekly checks, idle facts, rereading holds, refresh rows.
+6. **Upkeep and the rest.** Weekly checks, idle facts, rereading holds, refresh rows, bridges, gestures, value stories.
 
-Open posts the top five as the board. An item untouched for 14 days expires to `dropped` with a line in the log, unless it is blocked.
+By kind: band 1 is `reply` and `reply-person`; band 2 is `incident`; band 3 is `stall` and `silence`; band 4 is `flaw`, `doc-decision`, and `promotion`; band 5 is `setup`; every other kind is band 6.
+
+Open posts the top five as the board. An open item not opened or touched in 14 days expires, with a line in the log.
 
 ## Kinds
 
@@ -89,7 +94,33 @@ Each kind has a handler, a starting rung, and a ceiling. The ceilings are set he
 2026-10-08 | Q-0142 | stall | draft | asked Dana's outcome, offered to connect the source | edited | cut the second paragraph
 ```
 
-Date, item, kind, rung it ran at, what the agent proposed in one line, the disposition, and the edit in one line if there was one. Dispositions: `accepted` (as proposed), `edited`, `rejected`, `deferred`, `dropped`, `done` (acted at rung 2 or 3), `reversed` (undone after the fact).
+Date, item, kind, rung it ran at, what the agent proposed in one line, the disposition, and the edit in one line if there was one. An optional eighth field names the source that produced the item, so producers can be judged. Dispositions: `accepted` (as proposed), `edited`, `rejected`, `deferred`, `dropped`, `done` (acted at rung 2 or 3), `reversed` (undone after the fact).
+
+## Rungs on file
+
+`local/rungs.md` holds one table. `scripts/cx init` writes it with every kind at its starting rung.
+
+```markdown
+| Kind | Rung | Since | Why |
+|---|---|---|---|
+| fact | draft | 2026-10-08 | start |
+| fact | notice | 2026-11-02 | promoted: Q-0201 to Q-0260 |
+```
+
+The last row for a kind is its current rung.
+
+## Counting
+
+The model drafts and judges. A script counts. Run from the repo root:
+
+| Command | What it does |
+|---|---|
+| `scripts/cx init` | Creates the five files in `local/` that do not exist yet, with `rungs.md` at the starting rungs |
+| `scripts/cx queue` | Checks every item's fields, kind, and rung against its ceiling, and prints open items in triage order |
+| `scripts/cx queue --expire --apply` | Marks items untouched for 14 days `expired` and logs them |
+| `scripts/cx report` | The Friday numbers, the kinds that clear the promotion bar, rungs that should have dropped, kinds with three edits to judge as a rule, producers with five drops in a row, and bridges that stopped moving |
+
+Promotion is decided from `cx report`, not from reading the log by eye. Whether three edits are the same edit is still a judgment, and the report only lists them.
 
 ## How it compounds
 

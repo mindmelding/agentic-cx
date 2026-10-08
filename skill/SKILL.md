@@ -137,7 +137,7 @@ On a re-run, keep the old assessment and write a new dated one. The point is the
 
 Any area that scored 1, the old way, also gets a bridge in `local/bridges.md`, in the shape in [`../bridges.md`](../bridges.md#a-bridge): what it keeps, what it waits on, the number that should fall, its baseline today, and its exit. The team keeps the old thing running, counted, while the new loop is built beside it.
 
-Work that product owns goes in as `blocked`, linked to the item that asks for it, so the plan shows the whole path. Also create `local/rungs.md` with every kind at its starting rung from [`../queue.md`](../queue.md#kinds), and an empty `local/log.md` and `local/rules.md`.
+Work that product owns goes in as `blocked`, linked to the item that asks for it, so the plan shows the whole path. Run `scripts/cx init` first: it creates `local/queue.md`, `local/log.md`, `local/rules.md`, `local/bridges.md`, and `local/rungs.md` with every kind at its starting rung. Run `scripts/cx queue` after writing the plan, and fix anything it reports.
 
 ## 6. Read it back
 

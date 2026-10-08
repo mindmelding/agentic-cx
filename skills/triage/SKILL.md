@@ -10,7 +10,7 @@ The whole day runs through this skill. The queue, the kinds, the rungs, and the 
 ## Start
 
 1. Read `local/queue.md`, `local/rungs.md`, and `local/rules.md`. If the queue does not exist, say so and offer [open](../open/SKILL.md), or [setup](../../skill/SKILL.md) if there is no `stack.md`.
-2. Sort open items by band, then due date, then age. Skip `blocked` items, but say how many there are.
+2. Run `scripts/cx queue`. It prints open items in triage order and any item whose fields, kind, or rung are wrong. Fix the problems before working the queue. Skip `blocked` items, but say how many there are.
 
 ## For each item
 
@@ -21,7 +21,7 @@ The whole day runs through this skill. The queue, the kinds, the rungs, and the 
    - **Draft:** prepare the whole thing (the reply, the fact, the issue, the disposition). Show it. Ask: send as is, edit, or reject.
    - **Act with notice or silently:** do it, and say in one line what you did and how to undo it.
 4. **Carry it out** on a yes, or with the operator's edit. Anything sent outside the company follows [`floor/guardrails/authority.md`](../../floor/guardrails/authority.md).
-5. **Log it.** One line in `local/log.md`, in the format in [`queue.md`](../../queue.md#the-log). If the operator edited, write what changed in one line. That line is what the system learns from.
+5. **Log it.** Add `touched:` to the item if it stays open. When it closes, set its status and write one line in `local/log.md`, in the format in [`queue.md`](../../queue.md#the-log). If the operator edited, write what changed in one line. That line is what the system learns from.
 6. **Demote if it was wrong.** A rejection because the work was wrong, or a reversal, drops the kind one rung in `local/rungs.md`. Say so in one line.
 7. **Capture.** A new fact, flaw, or follow-up the item revealed becomes a new item, not a side note.
 8. **Next.**

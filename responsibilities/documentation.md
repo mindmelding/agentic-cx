@@ -67,9 +67,9 @@ This is the same ladder as [change](change.md), applied to the doc decision rath
 | 0 Propose | The check names the specs a commit touched and stops. A person classifies each one. |
 | 1 Draft | The check proposes a disposition, with the diff and the current spec beside it. A person accepts or edits. |
 | 2 Act with notice | Repeated, low-risk dispositions apply. Marking a spec unverified is the usual one. A person can reverse it. Elevating a guide and removing a page stay at draft until their own record is strong. |
-| 3 Act silently | A disposition that has been accepted without edit, on a class whose boundary did not move, applies and appears in the decision log. |
+| 3 Act silently | Only marking a spec unverified. A disposition itself tops out at act with notice: it applies, and the operator sees it in the next receipt, because a page coming down is public. |
 
-A new company starts at 0. A rung moves on the record of accepted decisions, the same way a customer capability does. Removing a witness line does not go silent. A boundary a person has to stand behind stays with a person.
+These rungs are the `spec-flag` and `doc-decision` kinds in the team's [queue](../queue.md#kinds), which holds the ceilings. A new company starts at 0. A rung moves on the record of accepted decisions, the same way a customer capability does. Removing a witness line does not go silent. A boundary a person has to stand behind stays with a person.
 
 ## Tools
 

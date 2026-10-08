@@ -15,10 +15,13 @@ Each one is a row in `local/bridges.md`, gitignored:
 - measure: live article count
 - baseline: 412 on 2026-10-08
 - now: 412
+- last moved: 2026-10-08
 - exit when: only witness, pre-access, and failure pages remain (target under 40)
 - owner: Priya
 - review: weekly
 ```
+
+The number in `baseline` and `now` is the first number on the line. `last moved` changes whenever `now` does; `scripts/cx report` flags a bridge whose `last moved` is four weeks old.
 
 Every bridge names five things: what it keeps, the new loop it waits on, one number that should fall, the condition that retires it, and who owns it.
 
