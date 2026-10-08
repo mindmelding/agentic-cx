@@ -411,5 +411,95 @@ class SpecCheck(unittest.TestCase):
             self.assertEqual(cx.main(["spec", "new", "--repo", str(self.repo), "Bad-Name"]), 2)
 
 
+
+STATE = cx.ROOT / "templates" / "house" / "state"
+
+
+class StateTemplates(unittest.TestCase):
+    def test_stack_template_has_every_capability_in_tools(self):
+        data, problems = cx.load_stack(STATE / "stack.md")
+        self.assertEqual([p for p in problems if "ledger_level" not in p[2] and "updated" not in p[2]], [])
+        have = {(r["section"], r["capability"]) for r in data["capabilities"]}
+        want = {(s, c) for s, names in cx.capabilities().items() for c in names}
+        self.assertEqual(have, want)
+        self.assertEqual(len(want), 24)
+
+    def test_queue_templates_read_clean(self):
+        self.assertEqual(cx.load_voice(STATE / "voice-queue.md")[1], [])
+        self.assertEqual(cx.load_inbox(STATE / "context-inbox.md")[1], [])
+
+    def test_init_copies_the_queue_templates(self):
+        house = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, house)
+        cx.init_house(house)
+        self.assertEqual((house / "voice-queue.md").read_text(), (STATE / "voice-queue.md").read_text())
+
+
+class StateParse(unittest.TestCase):
+    def setUp(self):
+        self.house = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.house)
+        cx.init_house(self.house)
+
+    def write(self, name, text, append=True):
+        path = self.house / name
+        path.write_text((path.read_text() if append and path.exists() else "") + text)
+        return path
+
+    def test_queue_rows_escapes_and_bad_rows(self):
+        path = self.write("voice-queue.md",
+                          "| CSV import fails | \"spins\" | Acme | Split it | 3 | t-412 | pass | open |\n"
+                          "| Retries \\| dupes | \"twice\" | Beta | Dedupe | 1 | t-88 | hold | held: second report |\n"
+                          "| Short | row |\n"
+                          "| Bad | q | a | r | many | e | maybe | done |\n")
+        data, problems = cx.load_voice(path)
+        self.assertEqual([r["Flaw"] for r in data["items"]], ["CSV import fails", "Retries | dupes", "Bad"])
+        messages = " ".join(m for _, _, m in problems)
+        for expected in ("2 cells", "Count is a whole number", "State is open", "Proposal is pass or hold"):
+            self.assertIn(expected, messages)
+
+    def test_cursor_must_be_never_or_a_time(self):
+        path = self.house / "voice-queue.md"
+        path.write_text(path.read_text().replace("cursor: never", "cursor: yesterday"))
+        self.assertTrue(any("cursor" in m for _, _, m in cx.load_voice(path)[1]))
+        path.write_text(path.read_text().replace("cursor: yesterday", "cursor: 2026-10-08T08:45:00-07:00"))
+        self.assertEqual(cx.load_voice(path)[1], [])
+
+    def test_stack_lines(self):
+        text = (STATE / "stack.md").read_text().replace("updated: YYYY-MM-DD", "updated: 2026-10-01")
+        text = text.replace("- Memory store: absent, not yet assessed", "- Memory store: found, Postgres memories")
+        text = text.replace("- Renderer: absent, not yet assessed", "- Renderer: maybe Mintlify")
+        text += "- Gong: call summaries\n"
+        data, problems = cx.load_stack(self.write("stack.md", text, append=False))
+        memory = [r for r in data["capabilities"] if r["capability"] == "Memory store"][0]
+        self.assertEqual((memory["status"], memory["where"]), ("found", "Postgres memories"))
+        self.assertEqual(data["inward"], [{"tool": "Gong", "does": "call summaries"}])
+        self.assertEqual(data["ledger_level"], 0)
+        self.assertTrue(any("`Renderer` needs found" in m for _, _, m in problems))
+        self.assertTrue(any("no line for Documentation: Renderer" in m for _, _, m in problems))
+
+    def test_status_board(self):
+        self.write("voice-queue.md", "| CSV | q | Acme | r | 2 | e | pass | open |\n| W | q | B | r | 1 | e | hold | passed: https://x/1 |\n")
+        self.write("context-inbox.md", "| 2026-10-07 | Acme | Fiscal year starts in February | sam | call |\n")
+        self.write("local/learnings/days/2026-10-07.md", "# 2026-10-07\n\n## Landed\n## Still open\n- CSV row\n- a spec\n")
+        self.write("local/runs/2026-10-07-close.md", "note\n<!-- exit 1 -->\n")
+        status, problems = cx.house_status(self.house)
+        self.assertEqual(problems, [])
+        board = dict(cx.status_lines(status, problems, today=THURSDAY))
+        self.assertIn("1 waiting on pass or hold", board["Voice"])
+        self.assertIn("1 passed", board["Voice"])
+        self.assertIn("1 fact(s)", board["Context"])
+        self.assertEqual(board["Day note"], "2026-10-07, 2 still open")
+        self.assertEqual(board["Runs"], "close 2026-10-07 (exit 1)")
+        self.assertIn("not run", board["Setup"])
+
+    def test_doctor_names_unreadable_lines(self):
+        shutil.copy(cx.ROOT / ".gitignore", self.house / ".gitignore")
+        subprocess.run(["git", "init", "-q", str(self.house)], check=True)
+        self.write("voice-queue.md", "| Short | row |\n")
+        warnings = [m for level, m in cx.doctor(self.house) if level == "warn"]
+        self.assertTrue(any(m.startswith("voice-queue.md:") and "cells" in m for m in warnings))
+
+
 if __name__ == "__main__":
     unittest.main()

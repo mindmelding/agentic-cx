@@ -3,6 +3,7 @@
 
     scripts/cx init                    create the private files: local/, the overlay, the queues, consent
     scripts/cx doctor                  say what is set up, what is missing, and the next step
+    scripts/cx status                  what is waiting: the queue, the inbox, the stack, the last day note
     scripts/cx models                  print which model runs which skill, per harness
     scripts/cx run open                run a skill unattended, within local/consent.toml
     scripts/cx run close --dry-run     print the command instead of running it
@@ -292,23 +293,6 @@ allowed = []
 skills = ["open", "close"]
 """
 
-VOICE_QUEUE = """\
-# Voice queue
-
-cursor: never
-
-One row per product flaw. The same flaw adds a quote and a count; it does not open a row.
-
-| Flaw | Quote | Account | Resolution | Count | Evidence | Proposal |
-|---|---|---|---|---|---|---|
-"""
-
-CONTEXT_INBOX = """\
-# Context inbox
-
-Facts about a customer with no store to go to yet. One per line: when, account, fact, author, source.
-"""
-
 RUN_PROMPT = """\
 Today is {today}. Run {skill} from this repository and follow it. Resolve its links from that file.
 
@@ -344,8 +328,9 @@ def init_house(house=ROOT):
             note(dest, write_new(dest, src.read_text(encoding="utf-8")))
     index = house / "local" / "learnings" / "index.md"
     note(index, write_new(index, (ROOT / "learnings" / "index.md").read_text(encoding="utf-8")))
-    for name, text in (("local/consent.toml", CONSENT), ("voice-queue.md", VOICE_QUEUE), ("context-inbox.md", CONTEXT_INBOX)):
-        note(house / name, write_new(house / name, text))
+    note(house / "local/consent.toml", write_new(house / "local/consent.toml", CONSENT))
+    for name in ("voice-queue.md", "context-inbox.md"):
+        note(house / name, write_new(house / name, (ROOT / "templates" / "house" / "state" / name).read_text(encoding="utf-8")))
     return created, kept
 
 
@@ -467,6 +452,15 @@ def doctor(house=ROOT, models=MODELS):
         ok("Set up: stack.md and local/assessment.md exist.")
     else:
         warn("Setup has not run. In Claude Code, `/cx-setup`. Elsewhere, \"Run the setup skill.\"")
+
+    _, problems = house_status(house)
+    if problems:
+        for source, line, message in problems[:8]:
+            warn(f"{source}{f':{line}' if line else ''}: {message}")
+        if len(problems) > 8:
+            warn(f"{len(problems) - 8} more line(s) cx cannot read. The shapes are in templates/house/state/.")
+    elif (house / "voice-queue.md").exists():
+        ok("State files read cleanly.")
 
     overlay = house / "local" / "overlay"
     if overlay.is_dir():
@@ -645,7 +639,259 @@ def cmd_run(args):
         for line in proc.stdout:
             sys.stdout.write(line)
             f.write(line)
-    return proc.wait()
+        code = proc.wait()
+        f.write(f"\n<!-- exit {code} -->\n")
+    return code
+
+
+# --- State files: what the skills write, read back ---------------------------
+#
+# The shapes are in templates/house/state/. Each loader returns what it read and a
+# list of problems, (file, line, message), rather than stopping at the first one.
+
+STATE_TEMPLATES = ROOT / "templates" / "house" / "state"
+STACK_STATUSES = ("found", "partial", "absent")
+VOICE_COLUMNS = ["Flaw", "Quote", "Account", "Resolution", "Count", "Evidence", "Proposal", "State"]
+INBOX_COLUMNS = ["When", "Account", "Fact", "Author", "Source"]
+VOICE_STATE = re.compile(r"^(open|held:\s*\S.*|passed:\s*\S.*)$")
+
+
+def capabilities(tools=ROOT / "tools.md"):
+    """{section: [capability]} from the tables in tools.md."""
+    out, section = {}, None
+    for line in tools.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^### (.+)$", line)
+        if m:
+            section = m.group(1).strip()
+            continue
+        if line.startswith("## "):
+            section = None
+        cells = split_row(line) if section and line.startswith("|") else None
+        if cells and cells[0] not in ("Capability", "") and not set(cells[0]) <= set("-"):
+            out.setdefault(section, []).append(cells[0])
+    return out
+
+
+def split_row(line):
+    """Cells of one Markdown table row. `\\|` stays inside its cell."""
+    parts = re.split(r"(?<!\\)\|", line.strip())
+    if parts and parts[0] == "":
+        parts = parts[1:]
+    if parts and parts[-1] == "":
+        parts = parts[:-1]
+    return [p.strip().replace("\\|", "|") for p in parts]
+
+
+def split_front_matter(text, source):
+    """(fields, body, line number the body starts on, problems)."""
+    if not text.startswith("---\n"):
+        return {}, text, 1, []
+    end = text.find("\n---", 3)
+    if end == -1:
+        return {}, text, 1, [(source, 1, "front matter opens with --- but never closes")]
+    fields, problems = {}, []
+    for n, line in enumerate(text[4:end].splitlines(), 2):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        m = re.match(r"^([A-Za-z_][\w-]*):\s*(.*)$", line)
+        if m:
+            fields[m.group(1)] = m.group(2).strip()
+        else:
+            problems.append((source, n, f"front matter line is not `key: value`: {line.strip()!r}"))
+    body_start = text.count("\n", 0, end) + 2
+    rest = text[end + 4:]
+    return fields, rest.split("\n", 1)[1] if "\n" in rest else "", body_start + 1, problems
+
+
+def parse_table(text, columns, source, first_line=1):
+    """Rows, as dicts, of the first table whose header is exactly `columns`."""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("|") and split_row(line) == columns:
+            break
+    else:
+        return [], [(source, first_line, f"no table with the columns {' | '.join(columns)}")]
+    rows, problems = [], []
+    for j in range(i + 2, len(lines)):
+        line = lines[j]
+        if not line.startswith("|"):
+            if line.strip():
+                break
+            continue
+        cells = split_row(line)
+        n = first_line + j
+        if len(cells) != len(columns):
+            problems.append((source, n, f"{len(cells)} cells, the table has {len(columns)}. Write a | inside a cell as \\|"))
+            continue
+        rows.append(dict(zip(columns, cells), _line=n))
+    return rows, problems
+
+
+def parse_when(value):
+    """A date or an ISO 8601 time, or None."""
+    try:
+        return datetime.datetime.fromisoformat(value)
+    except ValueError:
+        try:
+            return datetime.datetime.combine(datetime.date.fromisoformat(value), datetime.time())
+        except ValueError:
+            return None
+
+
+def load_stack(path):
+    source = path.name
+    text = path.read_text(encoding="utf-8")
+    fields, body, first, problems = split_front_matter(text, source)
+    level = fields.get("ledger_level", "")
+    if not re.fullmatch(r"[0-4]", level):
+        problems.append((source, 1, f"`ledger_level` is 0 to 4, not {level!r}. See ledger.md"))
+    if fields.get("updated") and not parse_when(fields["updated"]):
+        problems.append((source, 1, f"`updated` is a date, YYYY-MM-DD, not {fields['updated']!r}"))
+    expected = capabilities()
+    rows, inward, section = [], [], None
+    for n, line in enumerate(body.splitlines(), first):
+        m = re.match(r"^## (.+)$", line)
+        if m:
+            section = m.group(1).strip()
+            continue
+        m = re.match(r"^\s*[-*] ([^:]+):\s*(.*)$", line)
+        if not (m and section):
+            continue
+        name, rest = m.group(1).strip(), m.group(2).strip()
+        if section.lower() == "inward":
+            inward.append({"tool": name, "does": rest})
+            continue
+        s = re.match(r"^(found|partial|absent)\b[,;]?\s*(.*)$", rest, re.I)
+        if not s:
+            problems.append((source, n, f"`{name}` needs found, partial, or absent first, then where it lives"))
+            continue
+        if name not in expected.get(section, []):
+            problems.append((source, n, f"`{name}` is not a capability under {section} in tools.md"))
+        rows.append({"section": section, "capability": name, "status": s.group(1).lower(), "where": s.group(2), "_line": n})
+    have = {(r["section"], r["capability"]) for r in rows}
+    for section, names in expected.items():
+        for name in names:
+            if (section, name) not in have:
+                problems.append((source, 0, f"no line for {section}: {name}"))
+    return {"updated": fields.get("updated", ""), "ledger_level": int(level) if level.isdigit() else None,
+            "capabilities": rows, "inward": inward}, problems
+
+
+def load_voice(path):
+    source = path.name
+    fields, body, first, problems = split_front_matter(path.read_text(encoding="utf-8"), source)
+    cursor = fields.get("cursor", "")
+    if not cursor:
+        problems.append((source, 1, "no `cursor` in the front matter. Open reads only what is newer than it"))
+    elif cursor != "never" and not parse_when(cursor):
+        problems.append((source, 1, f"`cursor` is `never` or an ISO 8601 time, not {cursor!r}"))
+    rows, table_problems = parse_table(body, VOICE_COLUMNS, source, first)
+    problems += table_problems
+    for row in rows:
+        if not re.fullmatch(r"[1-9]\d*", row["Count"]):
+            problems.append((source, row["_line"], f"Count is a whole number, not {row['Count']!r}"))
+        if not VOICE_STATE.match(row["State"]):
+            problems.append((source, row["_line"], f"State is open, held: <reason>, or passed: <link>, not {row['State']!r}"))
+        if row["Proposal"] and row["Proposal"].lower() not in ("pass", "hold"):
+            problems.append((source, row["_line"], f"Proposal is pass or hold, not {row['Proposal']!r}"))
+    return {"cursor": cursor, "items": rows}, problems
+
+
+def load_inbox(path):
+    source = path.name
+    rows, problems = parse_table(path.read_text(encoding="utf-8"), INBOX_COLUMNS, source)
+    for row in rows:
+        if not parse_when(row["When"]):
+            problems.append((source, row["_line"], f"When is a date or an ISO 8601 time, not {row['When']!r}"))
+    return {"facts": rows}, problems
+
+
+def latest_day_note(house):
+    days = sorted((house / "local" / "learnings" / "days").glob("????-??-??.md"))
+    if not days:
+        return None
+    text = days[-1].read_text(encoding="utf-8")
+    m = re.search(r"^## Still open[ \t]*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    still_open = [l.strip()[2:] for l in (m.group(1) if m else "").splitlines() if re.match(r"\s*[-*] ", l)]
+    return {"date": days[-1].stem, "still_open": still_open}
+
+
+def last_runs(house):
+    """{skill: {date, exit}} from local/runs/, newest per skill."""
+    out = {}
+    for path in sorted((house / "local" / "runs").glob("????-??-??-*.md")):
+        date, skill = path.stem[:10], path.stem[11:]
+        codes = re.findall(r"<!-- exit (-?\d+) -->", path.read_text(encoding="utf-8"))
+        out[skill] = {"date": date, "exit": int(codes[-1]) if codes else None}
+    return out
+
+
+def house_status(house=ROOT):
+    """Everything `cx status` shows, plus the problems found reading it."""
+    status, problems = {}, []
+    for name, filename, loader in (("stack", "stack.md", load_stack), ("voice", "voice-queue.md", load_voice),
+                                   ("inbox", "context-inbox.md", load_inbox)):
+        path = house / filename
+        if path.exists():
+            status[name], found = loader(path)
+            problems += found
+        else:
+            status[name] = None
+    status["day_note"] = latest_day_note(house)
+    status["runs"] = last_runs(house)
+    return status, problems
+
+
+def status_lines(status, problems, today=None):
+    today = today or datetime.date.today()
+    out = []
+    stack = status["stack"]
+    if stack is None:
+        out.append(("Setup", "not run. `/cx-setup` in Claude Code, or \"Run the setup skill.\""))
+    else:
+        counts = {s: [r["capability"] for r in stack["capabilities"] if r["status"] == s] for s in STACK_STATUSES}
+        level = stack["ledger_level"]
+        out.append(("Setup", f"updated {stack['updated'] or '?'}, ledger level {level if level is not None else '?'}"))
+        absent = counts["absent"]
+        out.append(("Stack", f"{len(counts['found'])} found, {len(counts['partial'])} partial, {len(absent)} absent"
+                    + (f" ({', '.join(absent[:4])}{', …' if len(absent) > 4 else ''})" if absent else "")))
+    voice = status["voice"]
+    if voice is None:
+        out.append(("Voice", "no queue. `scripts/cx init` creates it"))
+    else:
+        states = [r["State"].split(":")[0] for r in voice["items"]]
+        cursor = voice["cursor"] or "?"
+        if cursor not in ("never", "?") and parse_when(cursor):
+            age = (today - parse_when(cursor).date()).days
+            cursor = f"{cursor[:16].replace('T', ' ')}" + (f", {age} days ago" if age > 1 else "")
+        waiting = sum(1 for r in voice["items"] if r["State"] == "open")
+        out.append(("Voice", f"{waiting} waiting on pass or hold, {states.count('held')} held, {states.count('passed')} passed. Read up to: {cursor}"))
+    inbox = status["inbox"]
+    if inbox is not None:
+        out.append(("Context", f"{len(inbox['facts'])} fact(s) in context-inbox.md with no store yet" if inbox["facts"] else "inbox empty"))
+    day = status["day_note"]
+    if day is None:
+        out.append(("Day note", "none yet. Close writes one"))
+    else:
+        out.append(("Day note", f"{day['date']}, {len(day['still_open'])} still open"))
+    runs = status["runs"]
+    if runs:
+        out.append(("Runs", ", ".join(f"{s} {r['date']}" + ("" if r["exit"] in (0, None) else f" (exit {r['exit']})") for s, r in sorted(runs.items()))))
+    if problems:
+        out.append(("Problems", f"{len(problems)} line(s) cx cannot read. `scripts/cx doctor` lists them"))
+    return out
+
+
+def cmd_status(args):
+    status, problems = house_status()
+    if args.json:
+        clean = json.loads(json.dumps(status, default=str))
+        clean["problems"] = [{"file": f, "line": n, "message": m} for f, n, m in problems]
+        print(json.dumps(clean, indent=2))
+        return 0
+    for label, text in status_lines(status, problems):
+        print(f"{label:<9} {text}")
+    return 0
 
 
 # --- Spec register: the documentation check -----------------------------------
@@ -1051,6 +1297,8 @@ def main(argv=None):
     init = sub.add_parser("init", help="create local/, the overlay, the queues, and local/consent.toml; never overwrites")
     init.add_argument("--quiet", action="store_true", help="do not count the files kept")
     sub.add_parser("doctor", help="say what is set up, what is missing, and the next step")
+    status = sub.add_parser("status", help="what is waiting: the queue, the inbox, the stack, the last day note and runs")
+    status.add_argument("--json", action="store_true", help="the same, as JSON, for other tools")
     models = sub.add_parser("models", help="print which model runs which skill, per harness")
     models.add_argument("--harness", help="one harness from models.toml")
     run = sub.add_parser("run", help="run a skill unattended, within local/consent.toml")
@@ -1077,7 +1325,7 @@ def main(argv=None):
             p.add_argument("--require-disposition", action="store_true", help="fail on any touched spec with no disposition, not only a moved `never`")
             p.add_argument("--format", choices=("text", "markdown", "json"), default="text")
     args = parser.parse_args(argv)
-    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec}
+    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec, "status": cmd_status}
     try:
         return commands[args.command](args)
     except CxError as e:

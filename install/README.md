@@ -66,6 +66,10 @@ What a run may do comes from `local/consent.toml`, not from the prompt alone:
 - Other hosts cannot scope tools per run. Codex runs in its workspace sandbox. For the rest, the rules reach the agent through the prompt, and `cx run` says so.
 - Nothing is sent and nothing is filed. What would need a yes is listed under "Waiting on you."
 
+## What is waiting
+
+`scripts/cx status` reads the state files and prints a short board: the stack, the voice queue and its cursor, the context inbox, the last day note, and the last scheduled runs. `--json` gives the same to other tools. `scripts/cx doctor` names any line in those files it cannot read.
+
 ## Staying current
 
 `git pull` picks up changes to the manual. Your `local/` folder is never touched. Once a month, run the [refresh](../skills/refresh/SKILL.md) skill to re-check the parts that track fast-moving tools.

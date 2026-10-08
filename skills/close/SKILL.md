@@ -9,7 +9,7 @@ Run this at the end of the day. Capture is cheap. Judgment waits for Friday, exc
 
 ## The day note
 
-Write or finish `local/learnings/days/YYYY-MM-DD.md`. Five sections, one or two lines each, with a pointer (a thread, a queue row, a commit). Leave a section empty rather than inventing an entry.
+Write or finish `local/learnings/days/YYYY-MM-DD.md`. Five sections, one or two lines each, with a pointer (a thread, a queue row, a commit), then `Still open`. Leave a section empty rather than inventing an entry.
 
 ```markdown
 # YYYY-MM-DD
@@ -19,9 +19,10 @@ Write or finish `local/learnings/days/YYYY-MM-DD.md`. Five sections, one or two 
 ## New situation
 ## Phrase
 ## Delight
+## Still open
 ```
 
-Add, under those, what is still open tomorrow: voice rows without a pass or hold, and specs still unverified. That list is the start of tomorrow's open.
+Under `Still open`, one bullet per thing still open tomorrow: voice rows whose `State` is `open`, and specs still unverified. That list is the start of tomorrow's open, and `scripts/cx status` counts it.
 
 ## A decision that should not wait
 

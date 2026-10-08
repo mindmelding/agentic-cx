@@ -25,7 +25,7 @@ The day note: what landed, what missed, a new situation, a phrase, a delight, an
 
 On Friday, close also promotes or discards the week's notes. At most five. That is the whole weekly review.
 
-Open and close can run on a schedule with `scripts/cx run open` and `scripts/cx run close`, within what `local/consent.toml` allows. What would need a yes waits for you on the board. See [install](install/README.md#running-the-day-on-a-schedule).
+Open and close can run on a schedule with `scripts/cx run open` and `scripts/cx run close`, within what `local/consent.toml` allows. What would need a yes waits for you on the board. `scripts/cx status` shows what is waiting between runs. See [install](install/README.md#running-the-day-on-a-schedule).
 
 ## Monthly
 
