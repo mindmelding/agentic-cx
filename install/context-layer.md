@@ -1,18 +1,35 @@
-# The context layer, per host
+# Connecting your tools
 
-Front of House reads the customer's file before it speaks. The file lives in whatever already holds your customer conversations: a CRM or context graph, a support desk, a shared inbox, meeting notes. The First Shift finds what's connected (`scripts/shift.py discover`) and asks you to confirm; you don't have to pick in advance. Any MCP server works with an adapter file in `context/adapters/`. The reference adapter is Moonbase: endpoint `https://yavin.moonbase.ai/mcp`, bearer key starting `mb_`, tools `ask_account`, `list_events`, `get_event`, `list_accounts`. Keep the key in an environment variable named `MOONBASE_MCP_KEY`; never commit it.
+The manual reads your customer's file before anything else, and the setup skill maps your tools onto [`tools.md`](../tools.md). Both work through whatever your agent host has connected. Connect before you run setup, so setup can find them.
 
-| Host | Where | Snippet |
+## What to connect
+
+In order of value:
+
+1. **Where the customer's file lives.** A CRM or account store, ideally one that keeps facts with a source and a date. This is the [context contract](../floor/context/CONTRACT.md).
+2. **Where customers write in.** A support desk, a shared inbox, a Slack Connect workspace.
+3. **Where product work is tracked.** Linear, Jira, or GitHub issues, so [voice](../responsibilities/voice.md) can file into it after a yes.
+4. **Where the product's own record is.** Events, traces, or a database view of the agent's actions. This decides your [ledger level](../ledger.md).
+
+Connect read access first. Setup asks before using any of it, and nothing writes to a connected tool without your yes.
+
+## Where each host keeps connectors
+
+| Host | Where | Shape |
 |---|---|---|
-| Claude Code | CLI | `claude mcp add --transport http moonbase https://yavin.moonbase.ai/mcp --header "Authorization: Bearer $MOONBASE_MCP_KEY"` |
-| Codex CLI | `~/.codex/config.toml` | `adapters/codex-config.toml` (`url` + `bearer_token_env_var`) |
-| Cursor | `.cursor/mcp.json` | `overlay/mcp.template.json` (`url` + `headers`) |
-| Gemini CLI | extension or `~/.gemini/settings.json` | `httpUrl` + `headers` |
-| VS Code / Copilot agent mode | `.vscode/mcp.json` | `type: http`, `url`, `headers` |
-| Windsurf, Cline, OpenCode, Goose | their MCP config | same `url` + `Authorization` header |
-| OpenAI Agents SDK | code | attach the MCP server with the bearer header |
-| Custom GPT | Actions | front the REST API with an Action, or paste the file into the chat |
+| Claude Code | `claude mcp add --transport http <name> <url> --header "Authorization: Bearer $KEY"` | Check with `/mcp` |
+| Codex | `~/.codex/config.toml` | `[mcp_servers.<name>]` with `url` and `bearer_token_env_var` |
+| Cursor | `.cursor/mcp.json` or `~/.cursor/mcp.json` | `mcpServers.<name>` with `url` and `headers` |
+| VS Code and Copilot agent mode | `.vscode/mcp.json` | `servers.<name>` with `type: "http"`, `url`, `headers` |
+| Gemini CLI | `~/.gemini/settings.json` | `mcpServers.<name>` with `httpUrl` and `headers` |
+| Windsurf, Cline, Goose, OpenCode | their MCP settings | The same URL and header |
 
-**Another CRM or context graph?** Copy `context/adapters/TEMPLATE.md`, map each contract row to a call, declare what the agent may write back, run `make build`. A Cursor rule for it is generated automatically.
+Keep keys in environment variables, never in a file in this repo.
 
-**No context layer?** The agent still works. It treats every conversation as a first one, says so internally, and writes the file as it goes. It never pretends to know.
+## A different CRM or context store
+
+[`floor/context/adapters/TEMPLATE.md`](../floor/context/adapters/TEMPLATE.md) maps each row of the context contract to a call in your tool, and says what the agent may write back. [`moonbase.md`](../floor/context/adapters/moonbase.md) beside it is a worked example. Write yours in `local/`, not in the repo, unless it would help other companies.
+
+## Nothing connected
+
+Everything still runs. Setup interviews you instead of reading. The floor treats each customer as a first conversation and says so. The ledger runs at level 0 or 1, by hand. Facts collect in `context-inbox.md` until there is somewhere to put them.

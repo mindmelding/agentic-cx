@@ -24,3 +24,9 @@ About fifteen minutes. [Close](skills/close/SKILL.md).
 The day note: what landed, what missed, a new situation, a phrase, a delight, and what is still open. A decision that would surprise a teammate becomes a learning file the same night.
 
 On Friday, close also promotes or discards the week's notes. At most five. That is the whole weekly review.
+
+## Monthly
+
+About thirty minutes. [Refresh](skills/refresh/SKILL.md).
+
+Re-verify the harness tables in [`enablement/`](enablement/README.md) and the standards in [`agent-customers.md`](agent-customers.md). The rest of the manual changes by decision. These change because the tools did.

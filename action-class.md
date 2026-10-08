@@ -16,6 +16,9 @@ Every class carries:
 | Never | What no instance may do. The boundary. |
 | Approval | Who has to say yes, and at which rung. |
 | Default rung | Where a new account starts. |
+| Context floor | The facts and connections an account needs before a first instance is worth trying. |
+| Reach | The systems and credentials an instance may use. Anything it can reach that is not listed is a defect. |
+| Reversible | Whether an instance can be undone in one step, and by whom. Irreversible classes never run silently. |
 | Sources | The code paths that implement it. A change here marks the spec unverified. |
 
 ```yaml
@@ -29,6 +32,12 @@ never:
   - show one customer's users to another customer
 approval: none for a read. The answer is the action
 default_rung: 3
+reach:
+  - read access to the company's event stream
+reversible: yes. An answer changes nothing
+context_floor:
+  - the company's event stream is connected
+  - the activation event is named
 sources:
   - src/analytics/answer.ts
   - src/analytics/what-changed.ts
@@ -42,6 +51,7 @@ A new class opens when the product can now do a kind of work with its own trigge
 
 ## What other pages mean by it
 
+- [Onboarding](responsibilities/onboarding.md) keeps the context floor for each class, and counts the first accepted instance as activation.
 - [Context](responsibilities/context.md) records which facts an instance cited.
 - [Change](responsibilities/change.md) stores a rung per class per account.
 - [Value](responsibilities/value.md) groups ledger rows by class.

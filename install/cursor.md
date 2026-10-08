@@ -1,40 +1,33 @@
 # Cursor
 
-**Rules (either path):**
+Clone the repo and open the folder in Cursor:
 
 ```
-npx skills add scmancillas/front-of-house -g -a cursor
+git clone https://github.com/mindmelding/agentic-cx.git
+cursor agentic-cx
 ```
 
-or copy the generated rules directly:
+Cursor's agent reads `AGENTS.md` at the root. In an Agent chat, say "Run the setup skill." Later: "start the day," "draft a reply to this," "wrap up."
 
-```
-scripts/install.sh cursor /path/to/project
-```
+To keep the manual beside your product code, add both folders to one workspace. The agent will find `AGENTS.md` in this one.
 
-That puts 15 rules in `.cursor/rules/` and stamps the canon's absolute path into the always-on rule so the agent can find `scripts/shift.py` and `FIRST-SHIFT.md` from your project. The rules are: `front-of-house.mdc` (always on), `front-of-house-voice.mdc`, `context-moonbase.mdc`, and one `moment-*.mdc` per playbook, all agent-requested by description. Invoke one by name with `@moment-angry-customer`.
+## Connectors
 
-**Context layer:** `.cursor/mcp.json` (template in `overlay/mcp.template.json`):
+`.cursor/mcp.json` in this folder, or `~/.cursor/mcp.json` for every project:
 
 ```json
 {
   "mcpServers": {
-    "moonbase": {
-      "url": "https://yavin.moonbase.ai/mcp",
-      "headers": { "Authorization": "Bearer ${env:MOONBASE_MCP_KEY}" }
+    "<name>": {
+      "url": "<server-url>",
+      "headers": { "Authorization": "Bearer ${env:YOUR_KEY}" }
     }
   }
 }
 ```
 
-Restart Cursor and confirm the four Moonbase tools appear under Settings, MCP.
+A project-level `.cursor/mcp.json` with a key in it must not be committed. Use the environment variable form above. More in [context-layer.md](context-layer.md).
 
-**Overlay:** the installer creates `overlay/` in the project and points the always-on rule at it. If you used `npx skills` instead, add `Overlay: read ./overlay/*.md before replying.` to the top of `front-of-house.mdc`.
+## Check it worked
 
-**Already have a Moonbase server in `~/.cursor/mcp.json`?** Delete the project-level `.cursor/mcp.json` the installer wrote; the tool names are the same whatever the server is called.
-
-**Test it:** open the project in Cursor, start a new Agent chat, and say `read FIRST-SHIFT.md and run it`. It should list the connectors it found and propose one, nudge before reading it, ask the interview one question at a time (mostly as confirmations), offer a time window, and come back with a brief.
-
-**Proof:** "Using Front of House, reply to this message from Dana. Read her file first." It must call the context tools before drafting.
-
-**Or let Cursor do all of this:** clone the repo and say "read AGENTS.md and follow it to set yourself up in this project." It will stop to ask you for the key and for permission to write the MCP config.
+After setup, `stack.md` and `local/assessment.md` exist and `git status` shows neither.

@@ -1,21 +1,27 @@
-# Codex CLI
-
-**Install the skill:**
+# Codex
 
 ```
-npx skills add scmancillas/front-of-house -g -a codex
+git clone https://github.com/mindmelding/agentic-cx.git
+cd agentic-cx
+codex
 ```
 
-Codex also reads `AGENTS.md` in the working directory. If you'd rather not install a skill, copy `adapters/AGENTS.md` into the project as `AGENTS.md` (or append it to an existing one). The repo's own root `AGENTS.md` is an install bootstrap, not the behavior file; use the one in `adapters/`.
+Codex reads `AGENTS.md` at the repo root, which lists the skills and the rules. Say "Run the setup skill." Later: "start the day," "draft a reply to this," "wrap up."
 
-**Context layer:** add to `~/.codex/config.toml` (the snippet is in `adapters/codex-config.toml`):
+Use the default approval mode for setup. It reads files outside the repo (past sessions, connector config) and should ask each time.
+
+## Connectors
+
+Add MCP servers to `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.moonbase]
-url = "https://yavin.moonbase.ai/mcp"
-bearer_token_env_var = "MOONBASE_MCP_KEY"
+[mcp_servers.<name>]
+url = "<server-url>"
+bearer_token_env_var = "YOUR_KEY"
 ```
 
-Or `codex mcp add moonbase --url https://yavin.moonbase.ai/mcp`, then add the `bearer_token_env_var` line by hand. Set `MOONBASE_MCP_KEY` in your shell.
+More in [context-layer.md](context-layer.md).
 
-**Overlay and proof:** same as every host. Copy `overlay/*.template.md` into the project, fill in authority and policies, then paste a real thread and check the reply read the file first.
+## Check it worked
+
+After setup, `stack.md` and `local/assessment.md` exist and `git status` shows neither.

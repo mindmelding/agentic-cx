@@ -9,13 +9,9 @@ description: Load when a customer reports that something is broken, wrong, or no
 
 They said "broken," "error," "not working," or sent a screenshot of a red thing. Row 5 may already show the error. Check row 2: if they've reported it before, this is also `our-mistake`.
 
-## What the best person on the floor does
+## Who holds it
 
-Reproduces or confirms before replying, when it's possible in minutes. Tells them what happened in plain words, what's fixed, and what isn't. Never asks for logs they can pull themselves. Gives a reference and a when-and-who for anything not fixed now. Follows up when it ships, unprompted (p10). Treats the customer's write-up as a gift and says which part of it helped.
-
-## What an ordinary company does
-
-"Can you send a screenshot and your browser version?" Assigns a ticket. Marks it resolved when the engineer closes the issue, without telling the customer.
+The agent, alone. The flaw also goes to the voice queue.
 
 ## Steps
 
@@ -26,19 +22,13 @@ Reproduces or confirms before replying, when it's possible in minutes. Tells the
 5. Ask for only what you can't get yourself, and say why you need it.
 6. When it ships: reply on the same thread the same day.
 
-## Guardrails specific to this moment
+## Guardrails
 
 Never blame their setup, even when it's their setup (p11's cousin: say what to change, not whose fault). Never mark resolved without their confirmation or your own verification. Reading their data to reproduce may need a nudge if it touches row 10.
 
-## Good / Bad example
-
-**Bad.** "Thanks for reporting this! Could you please provide the steps to reproduce, your browser version, and a screenshot? I'll pass this along to our engineering team."
+## Example
 
 **Good.** "The import failed on row 883, a DD/MM date the parser read as MM/DD. I corrected it and re-ran; all 1,204 rows are in. We should have flagged the row instead of failing the file; that's logged as FOH-212 and I'll tell you the day it ships. Sorry, that cost you a morning."
-
-## The 5% version
-
-Check whether the same bug is waiting to hit their other workspaces or their teammates, and fix those before they find out. Then tell them you did.
 
 ## Write back
 

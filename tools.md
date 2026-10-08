@@ -15,6 +15,14 @@ A capability is **found** when a signal matches. It is **partial** when a nearby
 
 ## Capabilities
 
+### Onboarding
+
+| Capability | What it must do | Signals | Default if absent |
+|---|---|---|---|
+| First-run path | The agent asks the desired outcome, then the context floor for the first class | An onboarding or setup flow; a first-run prompt | A first-run prompt in the agent that asks the outcome before anything else |
+| Activation events | Signup, context floor met, first action, first accepted action | Events named `signup`, `activated`, `first_*`; an activation funnel in product analytics | Rows on the action ledger. No separate funnel tool |
+| Stall list | New accounts and groups that tripped a stall signal | A lifecycle tool's segment; a CRM view; an analytics cohort | A saved query over the ledger. Signals in [onboarding](responsibilities/onboarding.md) |
+
 ### Context
 
 | Capability | What it must do | Signals | Default if absent |
@@ -35,7 +43,7 @@ A capability is **found** when a signal matches. It is **partial** when a nearby
 
 | Capability | What it must do | Signals | Default if absent |
 |---|---|---|---|
-| Action ledger | One row per delegated action, with disposition | An events, actions, or audit table; a warehouse only if it already holds this grain | Postgres table. Schema in [value](responsibilities/value.md) |
+| Action ledger | One row per delegated action, with disposition | An events, actions, or audit table; a warehouse only if it already holds this grain | Postgres table. Schema in [value](responsibilities/value.md). Until product builds it, run one level down: [ledger](ledger.md#when-there-is-no-ledger) |
 | Renewal clock | A date and an owner for the commercial conversation | CRM opportunity, contract object, billing subscription | The date already in the CRM |
 | Value story | A short claim tied to specific ledger rows | A note on the opportunity, a QBR doc | A field that stores ledger ids next to the story |
 

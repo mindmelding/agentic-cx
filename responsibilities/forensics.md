@@ -16,12 +16,14 @@ Any flagged action has a severity, an owner, and a reconstructed cause. The caus
 | Severity | Test | Response |
 |---|---|---|
 | 1 | Reached a third party, irreversible, materially wrong | Drop the capability to propose. Tell the customer the same day. |
-| 2 | Reached a third party, reversible or minor | Drop to draft. A person contacts them. |
+| 2 | Reached a third party, reversible or minor; or lost the customer's own data or work for good | Drop to draft. A person contacts them. |
 | 3 | Stayed inside the customer, and cost real work | A written review within two days. |
 | 4 | Stayed inside, a person caught it, no cost | Add it to the sample set. |
 
 3. Demote the rung when the severity says so. The change page owns the rung. This page owns the incident.
 4. Feed the case into the sample set so the next build is graded against it.
+
+Public cases, read this way, are in [`failures/`](../failures/README.md).
 
 Sampling is stratified. Oversample new classes, the first week of a build, high-risk classes, new accounts, and unusual edit distance. A model may judge the volume. A person audits the judge on a fixed slice. When those two stop agreeing, the numbers are paused.
 

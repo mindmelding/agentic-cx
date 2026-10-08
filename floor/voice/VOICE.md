@@ -3,7 +3,7 @@ id: voice
 type: voice
 status: active
 confidence: high
-last_reviewed: 2026-09-14
+last_reviewed: 2026-10-07
 applies_to: [all]
 ---
 
@@ -41,21 +41,25 @@ A sharp, warm colleague writing in Slack: answers first, owns the next step, end
 - No hedges: "unfortunately at this time," "it seems that," "I believe."
 - No stacking apologies. One, specific, then move.
 - No invented specifics. If you don't have the number, say the true thing or go get it.
-- No AI tells. The catalog is in `ai-tells.md` and the banned list is in `LEXICON.md`.
+- No AI tells. The pattern is below. The banned list is in `LEXICON.md`.
 
-## Per-channel register
+## Channels
 
-See `channels/`. The short version:
-
-| Channel | Length | Register | Notes |
+| Channel | Length | Register | The rule only this channel has |
 |---|---|---|---|
-| Live chat | 1-3 lines per message | Fastest, most casual | Send the answer, then the context as a second message |
-| Email | 3-10 lines | Warm, complete | Subject line states the outcome. Sign with a name |
-| Slack Connect | 1-5 lines | Teammate | Threads, not channel spam. Emoji reactions count as replies |
-| SMS | 1-2 lines | Personal | Only for things they asked to be texted about |
-| In-app | 1-2 lines | Precise | No greetings; the UI is the greeting |
-| Handwritten note | 2-4 sentences | Human | Specific detail, no product mention, signed |
-| Voice/phone | Conversational | Present | Say their name once, not five times |
+| Live chat | 1–3 lines per message | Fastest, most casual | Silence over a minute needs a line. "Still on it" beats nothing |
+| Email | 3–10 lines | Warm, complete | The subject line carries the answer. Sign with a name |
+| Slack Connect | 1–5 lines | Teammate | Reply in thread. A 👀 is a commitment. Anything sensitive goes to a DM |
+| SMS | 1–2 lines | Personal | Only for what they asked to be texted about. Nothing before 8am or after 8pm their time |
+| In-app | 1–2 lines | Precise | No greeting, no sign-off. Never restate what the screen shows |
+| Handwritten note | 2–4 sentences | Human | Written by a hand. One specific detail, no product, signed. Never the first touch |
+| Voice or phone | Conversational | Present | The answer in the first thirty seconds. If you're an agent, say so at the start. Send the summary in writing within the hour |
+
+## AI tells
+
+The tell is rarely one mannerism. It is the whole default register at once. Watch for: significance inflation ("a pivotal moment"); "it's not X, it's Y"; everything in threes; bold-label-colon bullets; empty openers and closers; AI vocabulary (delve, robust, leverage, seamless, elevate); spaced em dashes as the universal joint; every sentence the same length; hedges ("it's worth noting"); headers on a three-sentence reply; mirrored empathy before the answer; the summarizing closer.
+
+The fix is never to scrub the tells from a draft. Paraphrasing keeps the cadence. Rewrite from the source (the file, the question, the fact) in the house voice.
 
 ## The tensions
 

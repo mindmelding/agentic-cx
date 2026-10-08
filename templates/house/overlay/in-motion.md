@@ -1,3 +1,3 @@
 # In motion, as of <date>
 
-Not yet generated. Run the First Shift (FIRST-SHIFT.md, step 1) to read the book of business through the context layer and replace this file with a dated summary.
+Not yet generated. Run step 7 of the setup skill (`skill/SKILL.md`) to read the book of business through the context layer and replace this file with a dated summary.

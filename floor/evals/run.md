@@ -15,11 +15,14 @@ Two layers. The first is deterministic and cheap. The second is a model judging 
 `cx check` reads `voice/LEXICON.md` and scans a reply for banned phrases, banned words, banned openers, and structural patterns. Code blocks are stripped before scanning. It exits non-zero on any violation and prints each one with the offending text.
 
 ```
-cx check reply.md
-cx check - < reply.md
+scripts/cx check reply.md
+scripts/cx check - < reply.md
+scripts/cx check --gold --templates
 ```
 
-CI runs it against every gold reply in `evals/cases/` and every exemplar in `voice/EXEMPLARS.md`. A gold reply that fails the lexicon is a bug in the case, not in the lexicon.
+Run from the repo root. Banned phrases, words, openers, and patterns are errors. The "allowed, with care" limits (one exclamation point, one emoji, one apology) are warnings; `--strict` makes them errors. Each finding prints the file, line, column, the matched text, and the substitute from the lexicon's table when there is one.
+
+CI (`.github/workflows/lexicon.yml`) runs it against every gold reply in `evals/cases/` and every example in `templates/customer/`. A gold reply that fails the lexicon is a bug in the case, not in the lexicon.
 
 ## Layer 2: LLM-as-judge
 
@@ -70,9 +73,9 @@ Once a month, a person scores a random sample of ten replies blind, using the sa
 
 On every pull request:
 
-1. Layer 1 across all gold replies and exemplars. Any failure blocks the merge.
-2. Layer 2 across all cases. The mean score and the pass count are compared to `main`. A drop in either blocks the merge unless the PR explicitly changes the rubric or a case, in which case a human approves.
-3. Every playbook under `moments/` must be referenced by at least one case. Every case must reference a playbook that exists.
+1. Layer 1 across all gold replies and template examples. Any failure blocks the merge. This step runs today.
+2. Layer 2 across all cases. Not built yet. The mean score and the pass count are compared to `main`. A drop in either blocks the merge unless the PR explicitly changes the rubric or a case, in which case a human approves.
+3. Every case must reference a playbook that exists. Since the cut to fifteen cases, not every playbook has a case, so the reverse is not required.
 
 ## Judge prompt
 

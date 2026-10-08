@@ -1,36 +1,46 @@
 # Claude Code
 
-**Plugin (recommended, auto-updates):**
-
 ```
-/plugin marketplace add scmancillas/front-of-house
-/plugin install front-of-house@front-of-house
-```
-
-The plugin's skill is the repo root, so the whole canon comes along and the moment playbooks load on demand. Update with `claude plugin update front-of-house@front-of-house`.
-
-**Agent Skills CLI (same result, no marketplace):**
-
-```
-npx skills add scmancillas/front-of-house -g -a claude-code
+git clone https://github.com/mindmelding/agentic-cx.git
+cd agentic-cx
+claude
 ```
 
-**Manual (developer, stays in sync with your working tree):**
+`CLAUDE.md` imports `AGENTS.md`, so Claude knows what the repo is. The six skills are in `.claude/skills/`, each a short pointer to the real skill in `skills/` or `skill/`:
+
+| Command | Runs |
+|---|---|
+| `/cx-setup` | [`skill/SKILL.md`](../skill/SKILL.md) |
+| `/cx-open` | [`skills/open/SKILL.md`](../skills/open/SKILL.md) |
+| `/cx-floor` | [`skills/floor/SKILL.md`](../skills/floor/SKILL.md) |
+| `/cx-triage` | [`skills/triage/SKILL.md`](../skills/triage/SKILL.md) |
+| `/cx-close` | [`skills/close/SKILL.md`](../skills/close/SKILL.md) |
+| `/cx-refresh` | [`skills/refresh/SKILL.md`](../skills/refresh/SKILL.md) |
+
+Start with `/cx-setup`.
+
+## Working from another directory
+
+If you spend your day in the product repo, keep this one beside it and add it to the session:
 
 ```
-git clone https://github.com/scmancillas/front-of-house.git
-ln -s "$(pwd)/front-of-house" ~/.claude/skills/front-of-house
+claude --add-dir ~/agentic-cx
 ```
 
-Or per project: `scripts/install.sh claude <project-dir>` writes `CLAUDE.md` and links the canon as one skill.
+Then name the skill by path: "Run `~/agentic-cx/skills/open/SKILL.md`."
 
-**Context layer:**
+## Connectors
 
 ```
-claude mcp add --transport http moonbase https://yavin.moonbase.ai/mcp \
-  --header "Authorization: Bearer $MOONBASE_MCP_KEY"
+claude mcp add --transport http <name> <server-url> --header "Authorization: Bearer $YOUR_KEY"
 ```
 
-**Overlay:** copy `overlay/*.template.md` into your project's `overlay/` and fill them in. Until `authority.md` grants something, every sensitive action is a nudge.
+Check with `/mcp` inside a session. More in [context-layer.md](context-layer.md).
 
-**Proof:** paste a real thread and ask for a reply. It should call `ask_account` before drafting. Then `python3 scripts/fohcheck.py` on the draft.
+## Permissions
+
+Setup asks before reading anything, but Claude Code will also prompt for file reads outside the repo, such as past transcripts under `~/.claude/projects/`. Approve them one at a time the first run. Do not run setup in a mode that skips permission prompts.
+
+## Check it worked
+
+After `/cx-setup`, `stack.md` and `local/assessment.md` exist and `git status` shows neither.

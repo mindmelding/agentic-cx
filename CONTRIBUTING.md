@@ -5,9 +5,9 @@ This is a canon of opinions, not a wiki. Contributions that make it sharper are 
 ## What gets merged
 
 - **A principle** with a why, a when-it-doesn't-apply, and a good/bad pair. One opinion per file.
-- **A playbook** (`moments/<slug>/PLAYBOOK.md`) in the existing shape, with at least two eval cases.
+- **A playbook** (`moments/<slug>/PLAYBOOK.md`) in the existing shape. Add an eval case only if it tests behavior the fifteen in `floor/evals/cases/` do not.
 - **An exemplar** with a "why it works." Anonymized or synthetic. No real customer data, ever.
-- **A hall-of-shame entry** with the principle it violated and the rewrite.
+- **A failure case** in `failures/`, in the shape its README gives, with a reputable source.
 - **An eval case** that catches a real failure you saw.
 - **A source** with a "what we took" paragraph. Never a bare link.
 - **A legend**: a dated story of a gesture that landed and the reusable move.
@@ -18,17 +18,11 @@ This is a canon of opinions, not a wiki. Contributions that make it sharper are 
 
 - Generic best practice without an opinion.
 - Anything that loosens a guardrail. Overlays narrow; the canon doesn't loosen.
-- Edits to `adapters/`. They're generated.
 - Company-specific policy. That's your overlay.
 
 ## Before you open a PR
 
-```
-make build   # regenerate adapters
-make check   # lexicon check over the whole repo + adapters fresh
-```
-
-CI runs the same. If `fohcheck` flags your prose, rewrite from the source idea; don't patch the sentence.
+There is nothing to build. Check that every relative link you touched resolves, that no file names a real customer, and that customer-facing copy (gold replies, template examples) passes `scripts/cx check --gold --templates`. CI runs the same, plus `python3 scripts/test_cx.py`. If the check flags your prose, rewrite from the source idea; don't patch the sentence.
 
 ## Reversing an opinion
 
