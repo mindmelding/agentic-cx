@@ -26,13 +26,21 @@ CI (`.github/workflows/lexicon.yml`) runs it against every gold reply in `evals/
 
 ## Layer 2: LLM-as-judge
 
+```
+scripts/cx eval                          every case
+scripts/cx eval 005 017 --judge codex    two cases, judged by a second harness
+scripts/cx eval --dry-run                the cases and prompt sizes, no model called
+```
+
+Any harness in [`models.toml`](../../models.toml) can draft or judge, through its `pure` command: a prompt in, text out, no tools. The drafter runs at the `eval-draft` tier and the judge at `eval-judge`. Set `[eval] judge_harness` so the judge is a different family from the drafter; `cx eval` warns when they match. The judge prompt below is read from this file, so editing it here changes the run. Pass or fail is computed from the judge's scores against the rubric, not taken from its own `pass`. The exit code is 1 when any case fails.
+
 For each case in `evals/cases/`, the harness:
 
 1. Assembles the agent prompt: `MINDSET.md`, `PRECEDENCE.md`, the `guardrails/` files, `voice/VOICE.md`, `voice/LEXICON.md`, the one playbook under `moments/` matching the case's `moment`, and the case's context snapshot.
 2. Sends the incoming message and captures the reply.
 3. Runs Layer 1 on the reply. A violation triggers exactly one retry with the instruction "rewrite from the source," never "fix this draft." Paraphrasing a bad draft keeps its cadence. Regenerating from the snapshot does not.
 4. Assembles the judge prompt (below) with the rubric, the case's must and must-not lists, the notes for the judge, the gold reply as calibration, and the reply under test.
-5. Records the six dimension scores, any hard fail, and the judge's one-paragraph reasoning to `evals/results/<date>/<case-id>.json`.
+5. Records the reply, the six dimension scores, any hard fail, and the judge's one-paragraph reasoning to `local/evals/<date>/<case-id>.json` in the house, outside git.
 
 ## Case file format
 
@@ -74,7 +82,7 @@ Once a month, a person scores a random sample of ten replies blind, using the sa
 On every pull request:
 
 1. Layer 1 across all gold replies and template examples. Any failure blocks the merge. This step runs today.
-2. Layer 2 across all cases. Not built yet. The mean score and the pass count are compared to `main`. A drop in either blocks the merge unless the PR explicitly changes the rubric or a case, in which case a human approves.
+2. Layer 2 across all cases, with `scripts/cx eval`. It needs model access, so it does not run in this repo's CI yet. The mean score and the pass count are compared to `main`. A drop in either blocks the merge unless the PR explicitly changes the rubric or a case, in which case a human approves.
 3. Every case must reference a playbook that exists. Since the cut to fifteen cases, not every playbook has a case, so the reverse is not required.
 
 ## Judge prompt

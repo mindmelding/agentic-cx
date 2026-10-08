@@ -643,5 +643,116 @@ class McpConfig(unittest.TestCase):
         self.assertNotIn("CX_HOUSE", cx.mcp_config("json"))
 
 
+
+GOOD_VERDICT = json.dumps({"hard_fail": None, "scores": {d: 3 for d in cx.EVAL_DIMENSIONS}, "total": 18, "pass": True, "reasoning": "ok"})
+
+
+class Evals(unittest.TestCase):
+    def test_every_case_loads_and_has_a_playbook(self):
+        cases = cx.load_cases()
+        self.assertEqual(len(cases), len(list((cx.EVAL_DIR / "cases").glob("*.md"))))
+        for case in cases:
+            self.assertIn(f"floor/moments/{case.moment}/PLAYBOOK.md", cx.draft_prompt(case))
+
+    def test_case_ids_match_with_or_without_zeros(self):
+        self.assertEqual([c.id for c in cx.load_cases(["5"])], ["005"])
+        with self.assertRaises(cx.CxError):
+            cx.load_cases(["999"])
+
+    def test_prompts_carry_the_case_and_not_the_gold_to_the_drafter(self):
+        case = cx.load_cases(["005"])[0]
+        draft = cx.draft_prompt(case)
+        self.assertIn("43 minutes of failed logins", draft)
+        self.assertNotIn("Priya is writing the fix-forward", draft)
+        self.assertIn(cx.RETRY_LINE, cx.draft_prompt(case, retry=True))
+        judge = cx.judge_prompt(case, "REPLY UNDER TEST")
+        self.assertTrue(judge.startswith("You are scoring a customer-facing reply"))
+        self.assertIn("Priya is writing the fix-forward", judge)
+        self.assertTrue(judge.rstrip().endswith("REPLY UNDER TEST"))
+
+    def test_pass_is_computed_not_taken(self):
+        scores = {d: 3 for d in cx.EVAL_DIMENSIONS}
+        self.assertTrue(cx.parse_verdict("Here: " + GOOD_VERDICT)["pass"])
+        low = dict(scores, voice=0)
+        self.assertFalse(cx.parse_verdict(json.dumps({"scores": low, "pass": True}))["pass"])
+        thin = {d: 2 for d in cx.EVAL_DIMENSIONS}
+        self.assertFalse(cx.parse_verdict(json.dumps({"scores": thin, "pass": True}))["pass"])
+        failed = cx.parse_verdict(json.dumps({"hard_fail": "invented policy", "scores": scores}))
+        self.assertEqual((failed["total"], failed["pass"]), (0, False))
+        for bad in ("no json here", '{"scores": {"voice": 3}}', json.dumps({"scores": dict(scores, voice=7)})):
+            with self.assertRaises(cx.CxError):
+                cx.parse_verdict(bad)
+
+    def run_case(self, replies):
+        calls = []
+
+        def call(command):
+            calls.append(command)
+            return replies.pop(0)
+
+        return cx.eval_case(cx.load_cases(["005"])[0], MODELS, "claude", "codex", call), calls
+
+    def test_one_retry_after_a_lexicon_failure(self):
+        row, calls = self.run_case(["Great question! We leverage it.", "Credited $49, ref 4471.", GOOD_VERDICT])
+        self.assertTrue(row["retried"])
+        self.assertTrue(row["pass"])
+        self.assertEqual(len(calls), 3)
+        self.assertIn(cx.RETRY_LINE, calls[1][calls[1].index("-p") + 1])
+        self.assertEqual(calls[2][0], "codex")
+
+    def test_a_second_lexicon_failure_fails_without_a_judge(self):
+        row, calls = self.run_case(["We leverage it.", "We utilize it.", GOOD_VERDICT])
+        self.assertEqual((row["pass"], row["hard_fail"], len(calls)), (False, "lexicon after retry", 2))
+
+    def test_an_unreadable_judge_fails_the_case(self):
+        row, _ = self.run_case(["Credited $49, ref 4471.", "I think it is fine"])
+        self.assertFalse(row["pass"])
+        self.assertIn("no JSON", row["error"])
+
+
+class Ledger(unittest.TestCase):
+    def rows(self, n=30):
+        return [{"time": f"2026-10-01T{i:02d}", "account": ["acme", "beta", "gamma"][i % 3],
+                 "action_class": "c", "ref": str(i)} for i in range(n)]
+
+    def test_sample_caps_per_account_and_is_repeatable(self):
+        picked = cx.ledger_sample(self.rows(), per_account=4, seed=7)
+        self.assertEqual(len(picked), 12)
+        self.assertEqual(picked, cx.ledger_sample(self.rows(), per_account=4, seed=7))
+        only = cx.ledger_sample(self.rows(), per_account=4, accounts={"beta"}, seed=7)
+        self.assertEqual({r["account"] for r in only}, {"beta"})
+        self.assertEqual([r["time"] for r in only], sorted(r["time"] for r in only))
+
+    def test_report_leaves_ungraded_out_of_the_rate(self):
+        rows = [{"action_class": "c", "disposition": d} for d in ("accepted", "accepted", "edited", "", "Reversed")]
+        classes, problems = cx.ledger_report(rows)
+        self.assertEqual(problems, [])
+        self.assertEqual((classes["c"]["graded"], classes["c"]["ungraded"], classes["c"]["acceptance"]), (4, 1, 0.5))
+        _, problems = cx.ledger_report([{"action_class": "c", "disposition": "maybe"}])
+        self.assertTrue(problems)
+
+    def test_cli_round_trip(self):
+        d = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, d)
+        export = d / "export.csv"
+        export.write_text("time,account,action_class,ref\n" + "".join(f"2026-10-0{i % 9 + 1},a{i % 2},c{i % 3},{i}\n" for i in range(12)))
+        out = io.StringIO()
+        with redirect_stdout(out), redirect_stderr(io.StringIO()):
+            self.assertEqual(cx.main(["ledger", "sample", str(export), "--per-account", "3", "--seed", "1"]), 0)
+        self.assertTrue(out.getvalue().startswith("time,account,action_class,ref,disposition,why,graded_by"))
+        sheet = d / "sheet.csv"
+        sheet.write_text(out.getvalue().replace(",,,", ",accepted,fine,sam", 2))
+        out = io.StringIO()
+        with redirect_stdout(out), redirect_stderr(io.StringIO()), mock.patch.dict(cx.os.environ, {"CX_HOUSE": str(d)}):
+            self.assertEqual(cx.main(["ledger", "report", str(sheet)]), 0)
+        self.assertIn("Level 1, sampled", out.getvalue())
+        with redirect_stderr(io.StringIO()):
+            self.assertEqual(cx.main(["ledger", "sample", str(d / "nope.csv")]), 2)
+        bad = d / "bad.csv"
+        bad.write_text("time,account\n1,a\n")
+        with redirect_stderr(io.StringIO()):
+            self.assertEqual(cx.main(["ledger", "sample", str(bad)]), 2)
+
+
 if __name__ == "__main__":
     unittest.main()

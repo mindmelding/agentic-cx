@@ -12,6 +12,8 @@
     scripts/cx spec lint               check the spec register: fields, rungs, sources that exist
     scripts/cx spec check --base main  name the specs a change touched and the doc decision each needs
 
+    scripts/cx eval [005 ...]          the reply evals: a model drafts, the lexicon checks, a judge scores
+    scripts/cx ledger sample x.csv     pick actions per account for grading by hand; `ledger report` reads them back
     scripts/cx mcp config claude       print the MCP setup for a host: claude, codex, cursor, gemini, vscode, json
     scripts/cx mcp serve               the MCP server itself, over stdio. Hosts start it
 
@@ -1317,6 +1319,307 @@ def cmd_spec(args):
     return 1 if (blocking or errors) else 0
 
 
+# --- Evals, layer 2: a model drafts, the lexicon checks, another model judges ---
+#
+# floor/evals/run.md is the procedure, and its judge prompt is read from there.
+# Any harness in models.toml can draft or judge, through its `pure` command: no
+# tools, no files, just a prompt in and text out. Pass or fail is computed here
+# from the judge's scores, never taken from the judge's own `pass`.
+
+EVAL_DIR = ROOT / "floor" / "evals"
+EVAL_DIMENSIONS = ("answer_first", "specificity", "commitment", "voice", "effort", "honesty_safety")
+EVAL_PASS_TOTAL = 14
+RETRY_LINE = ("Your previous draft used banned language. Do not edit it. "
+              "Write a new reply from the context snapshot and the customer's message.")
+
+
+@dataclass
+class Case:
+    id: str
+    path: Path
+    moment: str
+    sections: dict
+    channel: str = ""
+
+    def section(self, name):
+        return self.sections.get(name, "").strip()
+
+
+def load_case(path):
+    text = path.read_text(encoding="utf-8")
+    fields, body, _, problems = split_front_matter(text, path.name)
+    if problems or "id" not in fields or "moment" not in fields:
+        raise CxError(f"{path.name}: needs front matter with `id` and `moment`")
+    sections = {m.group(1).strip(): m.group(2) for m in re.finditer(r"^## (.+?)[ \t]*\n(.*?)(?=^## |\Z)", body, re.S | re.M)}
+    missing = [s for s in ("Context snapshot", "Incoming message", "Must", "Must not", "Gold reply") if s not in sections]
+    if missing:
+        raise CxError(f"{path.name}: missing section(s) {', '.join(missing)}")
+    return Case(fields["id"].strip("'\""), path, fields["moment"], sections, fields.get("channel", ""))
+
+
+def load_cases(ids=None):
+    cases = [load_case(p) for p in sorted((EVAL_DIR / "cases").glob("*.md"))]
+    if ids:
+        wanted = {i.lstrip("0") or "0" for i in ids}
+        cases = [c for c in cases if (c.id.lstrip("0") or "0") in wanted or c.path.stem in ids]
+        if not cases:
+            raise CxError(f"no case matches {', '.join(ids)}")
+    return cases
+
+
+def unquote(text):
+    """A blockquoted message or reply, as plain text."""
+    return "\n".join(re.sub(r"^>\s?", "", line) for line in text.strip().splitlines())
+
+
+def draft_prompt(case, retry=False):
+    floor = ROOT / "floor"
+    parts = [floor / "MINDSET.md", floor / "PRECEDENCE.md", *sorted((floor / "guardrails").glob("*.md")),
+             floor / "voice" / "VOICE.md", floor / "voice" / "LEXICON.md", floor / "moments" / case.moment / "PLAYBOOK.md"]
+    missing = [str(p.relative_to(ROOT)) for p in parts if not p.exists()]
+    if missing:
+        raise CxError(f"case {case.id}: missing {', '.join(missing)}")
+    canon = "\n\n".join(f"<!-- {p.relative_to(ROOT)} -->\n{p.read_text(encoding='utf-8')}" for p in parts)
+    task = (
+        "You are the agent that replies to this company's customers. Follow the canon above.\n\n"
+        f"## The customer's file\n\n{case.section('Context snapshot')}\n\n"
+        f"## Their message{f' ({case.channel})' if case.channel else ''}\n\n{unquote(case.section('Incoming message'))}\n\n"
+        "Write the reply you would send, and nothing else: no preamble, no notes, no options."
+    )
+    if retry:
+        task += "\n\n" + RETRY_LINE
+    return canon + "\n\n---\n\n" + task
+
+
+def judge_prompt(case, reply):
+    run = (EVAL_DIR / "run.md").read_text(encoding="utf-8")
+    m = re.search(r"^## Judge prompt\s*\n+```\n(.*?)^```", run, re.S | re.M)
+    if not m:
+        raise CxError("floor/evals/run.md has no judge prompt block")
+    rubric = (EVAL_DIR / "rubric.md").read_text(encoding="utf-8")
+    blocks = [
+        ("Rubric", strip_front_matter(rubric)),
+        ("Context snapshot", case.section("Context snapshot")),
+        ("Incoming message", unquote(case.section("Incoming message"))),
+        ("Must", case.section("Must")),
+        ("Must not", case.section("Must not")),
+        ("Notes for the judge", case.section("Notes for the judge") or "None."),
+        ("Gold reply, for calibration", unquote(case.section("Gold reply"))),
+        ("Reply under test", reply),
+    ]
+    return m.group(1).strip() + "\n\n" + "\n\n".join(f"## {name}\n\n{text}" for name, text in blocks)
+
+
+def parse_verdict(text):
+    """The judge's JSON, and pass or fail by the rubric. Raises CxError on anything unreadable."""
+    start, end = text.find("{"), text.rfind("}")
+    if start == -1 or end <= start:
+        raise CxError("the judge returned no JSON")
+    try:
+        data = json.loads(text[start:end + 1])
+    except ValueError as e:
+        raise CxError(f"the judge's JSON does not parse: {e}")
+    scores = data.get("scores") or {}
+    try:
+        scores = {d: int(scores[d]) for d in EVAL_DIMENSIONS}
+    except (KeyError, TypeError, ValueError):
+        raise CxError(f"the judge did not score all six dimensions: {sorted(scores)}")
+    if any(not 0 <= v <= 3 for v in scores.values()):
+        raise CxError(f"a score is outside 0 to 3: {scores}")
+    hard_fail = data.get("hard_fail") or None
+    total = 0 if hard_fail else sum(scores.values())
+    passed = not hard_fail and total >= EVAL_PASS_TOTAL and min(scores.values()) >= 1
+    return {"hard_fail": hard_fail, "scores": scores, "total": total, "pass": passed,
+            "judge_said_pass": data.get("pass"), "reasoning": data.get("reasoning", "")}
+
+
+def pure_command(models, harness, tier, prompt):
+    spec = models.get("harness", {}).get(harness)
+    if not spec or "pure" not in spec:
+        raise CxError(f"harness {harness!r} has no `pure` command in models.toml")
+    model = spec.get(tier, "")
+    return build_command(spec["pure"], {"prompt": prompt, "model": model, "kit": str(ROOT), "house": str(ROOT)}, []), model
+
+
+def call_model(command, timeout=600):
+    try:
+        r = subprocess.run(command, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise CxError(f"{command[0]} failed: {e}")
+    if r.returncode:
+        raise CxError(f"{command[0]} exited {r.returncode}: {(r.stderr or r.stdout).strip()[:300]}")
+    return r.stdout.strip()
+
+
+def eval_case(case, models, drafter, judge, call=call_model):
+    """Draft, check, retry once on a lexicon failure, judge. Returns one result row."""
+    lex = load_lexicon()
+    row = {"case": case.id, "moment": case.moment, "drafter": drafter, "judge": judge, "retried": False}
+    command, row["draft_model"] = pure_command(models, drafter, models.get("skills", {}).get("eval-draft", "frontier"), draft_prompt(case))
+    reply = call(command)
+    findings = [f for f in check_text(reply, lex, "reply") if not f.warning]
+    if findings:
+        row["retried"] = True
+        row["first_draft_lexicon"] = [str(f) for f in findings]
+        command, _ = pure_command(models, drafter, models.get("skills", {}).get("eval-draft", "frontier"), draft_prompt(case, retry=True))
+        reply = call(command)
+        findings = [f for f in check_text(reply, lex, "reply") if not f.warning]
+    row["reply"] = reply
+    row["lexicon"] = [str(f) for f in findings]
+    if findings:
+        row.update({"hard_fail": "lexicon after retry", "scores": {}, "total": 0, "pass": False, "reasoning": ""})
+        return row
+    command, row["judge_model"] = pure_command(models, judge, models.get("skills", {}).get("eval-judge", "judge"), judge_prompt(case, reply))
+    try:
+        row.update(parse_verdict(call(command)))
+    except CxError as e:
+        row.update({"hard_fail": None, "scores": {}, "total": 0, "pass": False, "error": str(e)})
+    return row
+
+
+def cmd_eval(args):
+    models = load_models()
+    drafter = pick_harness(models, args.drafter)
+    judge = args.judge or models.get("eval", {}).get("judge_harness") or drafter
+    if judge not in models.get("harness", {}):
+        raise CxError(f"unknown judge harness {judge!r}")
+    if judge == drafter and not args.judge:
+        print(f"cx eval: the judge is the drafter's harness ({drafter}). run.md wants a different family: "
+              "pass --judge, or set [eval] judge_harness in models.toml.", file=sys.stderr)
+    cases = load_cases(args.cases)
+    if args.dry_run:
+        for case in cases:
+            prompt = draft_prompt(case)
+            _, model = pure_command(models, drafter, models["skills"].get("eval-draft", "frontier"), prompt)
+            print(f"{case.id}  {case.moment:<26} draft on {drafter} ({model or 'default'}), judged on {judge}, {len(prompt):,} chars")
+        return 0
+    out_dir = house_dir() / "local" / "evals" / datetime.date.today().isoformat()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for case in cases:
+        print(f"cx eval: {case.id} {case.moment}…", file=sys.stderr)
+        try:
+            row = eval_case(case, models, drafter, judge)
+        except CxError as e:
+            row = {"case": case.id, "moment": case.moment, "pass": False, "total": 0, "error": str(e)}
+        (out_dir / f"{case.path.stem}.json").write_text(json.dumps(row, indent=2) + "\n", encoding="utf-8")
+        rows.append(row)
+        note = row.get("error") or row.get("hard_fail") or ("retried" if row.get("retried") else "")
+        print(f"{case.id}  {case.moment:<26} {row['total']:>2}/18  {'pass' if row['pass'] else 'FAIL'}  {note}")
+    passed = sum(1 for r in rows if r["pass"])
+    mean = sum(r["total"] for r in rows) / len(rows)
+    print(f"cx eval: {passed}/{len(rows)} passed, mean {mean:.1f}/18. Results in {out_dir}", file=sys.stderr)
+    return 0 if passed == len(rows) else 1
+
+
+# --- Ledger, level 1: a sample graded by hand -----------------------------------
+#
+# ledger.md: twenty actions per account per week, each graded with a disposition
+# and one line on why. `sample` makes the sheet from an export; `report` reads it
+# back as acceptance per class, labeled with its level and its sample size.
+
+LEDGER_DISPOSITIONS = ("accepted", "edited", "ignored", "reversed", "blocked")
+LEDGER_REQUIRED = ("time", "account", "action_class", "ref")
+LEDGER_GRADE = ("disposition", "why", "graded_by")
+LEDGER_LEVELS = {0: "told", 1: "sampled", 2: "observed", 3: "reconstructed", 4: "native"}
+
+
+def read_csv(path):
+    import csv
+    try:
+        stream = sys.stdin if str(path) == "-" else open(path, newline="", encoding="utf-8")
+    except OSError as e:
+        raise CxError(f"cannot read {path}: {e.strerror}")
+    with stream:
+        reader = csv.DictReader(stream)
+        if reader.fieldnames is None:
+            raise CxError(f"{path}: empty")
+        fields = [f.strip() for f in reader.fieldnames]
+        rows = [{k.strip(): (v or "").strip() for k, v in row.items() if k is not None} for row in reader]
+    return fields, rows
+
+
+def ledger_sample(rows, per_account=20, accounts=None, seed=None):
+    import random
+    rng = random.Random(seed)
+    by_account = {}
+    for row in rows:
+        if accounts and row["account"] not in accounts:
+            continue
+        by_account.setdefault(row["account"], []).append(row)
+    out = []
+    for account in sorted(by_account):
+        picked = by_account[account] if len(by_account[account]) <= per_account else rng.sample(by_account[account], per_account)
+        out += sorted(picked, key=lambda r: r["time"])
+    return out
+
+
+def ledger_report(rows):
+    """{class: {disposition counts, graded, ungraded, acceptance}} and the problems found."""
+    classes, problems = {}, []
+    for n, row in enumerate(rows, 2):
+        c = classes.setdefault(row.get("action_class") or "(none)", {d: 0 for d in LEDGER_DISPOSITIONS} | {"ungraded": 0})
+        d = (row.get("disposition") or "").lower()
+        if not d:
+            c["ungraded"] += 1
+        elif d in LEDGER_DISPOSITIONS:
+            c[d] += 1
+        else:
+            problems.append(f"row {n}: disposition is one of {', '.join(LEDGER_DISPOSITIONS)}, not {d!r}")
+            c["ungraded"] += 1
+    for c in classes.values():
+        c["graded"] = sum(c[d] for d in LEDGER_DISPOSITIONS)
+        c["acceptance"] = round(c["accepted"] / c["graded"], 3) if c["graded"] else None
+    return classes, problems
+
+
+def stack_ledger_level(house):
+    path = house / "stack.md"
+    if not path.exists():
+        return None
+    return load_stack(path)[0]["ledger_level"]
+
+
+def cmd_ledger(args):
+    import csv
+    fields, rows = read_csv(args.file)
+    if args.ledger_command == "sample":
+        missing = [f for f in LEDGER_REQUIRED if f not in fields]
+        if missing:
+            raise CxError(f"{args.file}: missing column(s) {', '.join(missing)}. Needs {', '.join(LEDGER_REQUIRED)}")
+        accounts = {a.strip() for a in args.accounts.split(",")} if args.accounts else None
+        picked = ledger_sample(rows, args.per_account, accounts, args.seed)
+        out_fields = fields + [f for f in LEDGER_GRADE if f not in fields]
+        writer = csv.DictWriter(sys.stdout, fieldnames=out_fields, extrasaction="ignore", lineterminator="\n")
+        writer.writeheader()
+        for row in picked:
+            writer.writerow({f: row.get(f, "") for f in out_fields})
+        print(f"cx ledger: {len(picked)} row(s) from {len({r['account'] for r in picked})} account(s)", file=sys.stderr)
+        return 0
+    if "disposition" not in fields or "action_class" not in fields:
+        raise CxError(f"{args.file}: a graded sheet needs `action_class` and `disposition` columns. Make one with `cx ledger sample`")
+    level = args.level if args.level is not None else stack_ledger_level(house_dir())
+    if level is None:
+        level = 1
+    classes, problems = ledger_report(rows)
+    if args.json:
+        print(json.dumps({"level": level, "level_name": LEDGER_LEVELS[level], "classes": classes, "problems": problems}, indent=2))
+        return 1 if problems else 0
+    label = f"Level {level}, {LEDGER_LEVELS[level]}"
+    print(f"Acceptance by class. {label}. Ungraded rows are left out of the rate.\n")
+    print("| Class | Graded | Accepted | Edited | Ignored | Reversed | Blocked | Ungraded | Acceptance |")
+    print("|---|---|---|---|---|---|---|---|---|")
+    for name in sorted(classes, key=lambda k: -classes[k]["graded"]):
+        c = classes[name]
+        rate = f"{c['acceptance']:.0%} (n={c['graded']})" if c["acceptance"] is not None else "-"
+        print(f"| `{name}` | {c['graded']} | {c['accepted']} | {c['edited']} | {c['ignored']} | {c['reversed']} | {c['blocked']} | {c['ungraded']} | {rate} |")
+    for p in problems:
+        print(f"\n{p}", file=sys.stderr)
+    if level < 1:
+        print("\nLevel 0 supports no acceptance rate. ledger.md: voice and context only.", file=sys.stderr)
+    return 1 if problems else 0
+
+
 # --- MCP server: the manual for any agent host ---------------------------------
 #
 # `cx mcp serve` speaks the Model Context Protocol over stdio, with nothing but the
@@ -1677,6 +1980,22 @@ def main(argv=None):
             p.add_argument("--body-file", help="the pull request description, for `doc: <class> = <disposition>` lines")
             p.add_argument("--require-disposition", action="store_true", help="fail on any touched spec with no disposition, not only a moved `never`")
             p.add_argument("--format", choices=("text", "markdown", "json"), default="text")
+    ev = sub.add_parser("eval", help="run the reply evals: a model drafts each case, the lexicon checks, a judge scores")
+    ev.add_argument("cases", nargs="*", help="case ids, like 005 or 5 (default: all)")
+    ev.add_argument("--drafter", help="the harness that drafts (default: CX_HARNESS, else the first on PATH)")
+    ev.add_argument("--judge", help="the harness that judges (default: [eval] judge_harness, else the drafter)")
+    ev.add_argument("--dry-run", action="store_true", help="list the cases and prompt sizes; call no model")
+    ledger = sub.add_parser("ledger", help="sample actions for grading by hand, and report acceptance from the graded sheet")
+    ledger_sub = ledger.add_subparsers(dest="ledger_command", required=True)
+    ls = ledger_sub.add_parser("sample", help="pick rows per account from an export, with empty grading columns")
+    ls.add_argument("file", help="a CSV export with time, account, action_class, ref; '-' for stdin")
+    ls.add_argument("--per-account", type=int, default=20, help="rows per account (default 20)")
+    ls.add_argument("--accounts", help="comma-separated accounts to keep: the ones in motion")
+    ls.add_argument("--seed", type=int, help="make the random pick repeatable")
+    lr = ledger_sub.add_parser("report", help="acceptance per class from a graded sheet, labeled with its level")
+    lr.add_argument("file", help="the graded sheet; '-' for stdin")
+    lr.add_argument("--level", type=int, choices=sorted(LEDGER_LEVELS), help="the ledger level (default: stack.md, else 1)")
+    lr.add_argument("--json", action="store_true")
     mcp = sub.add_parser("mcp", help="serve the manual over MCP to any agent host, or print a host's setup")
     mcp_sub = mcp.add_subparsers(dest="mcp_command", required=True)
     mcp_sub.add_parser("serve", help="speak MCP over stdio. Hosts start this; you do not run it by hand")
@@ -1684,7 +2003,7 @@ def main(argv=None):
     mcp_config_p.add_argument("host", choices=MCP_HOSTS)
     mcp_config_p.add_argument("--house", help="where the private files live (default: CX_HOUSE, else this repo)")
     args = parser.parse_args(argv)
-    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec, "status": cmd_status, "mcp": cmd_mcp}
+    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec, "status": cmd_status, "mcp": cmd_mcp, "eval": cmd_eval, "ledger": cmd_ledger}
     try:
         return commands[args.command](args)
     except CxError as e:
