@@ -1,12 +1,14 @@
 ---
 id: adr-2026-09-14-agent-skills-as-native-unit
 type: decision
-status: active
+status: superseded
 confidence: medium
-last_reviewed: 2026-09-14
+last_reviewed: 2026-10-08
 ---
 
 # Playbooks are Agent Skills; every other format is generated
+
+**Superseded 2026-10-08** by [`2026-10-08-entry-points-point-at-the-repo.md`](2026-10-08-entry-points-point-at-the-repo.md). The playbook format still holds. The generated adapters were never built in this repo.
 
 **Date.** 2026-09-14
 **Decision.** Each moment in `moments/` is a directory with a `PLAYBOOK.md` in the Agent Skills format (YAML frontmatter with name and description, then the body). `MINDSET.md` is the always-loaded core. Adapters for Cursor rules, `AGENTS.md`, `CLAUDE.md`, a system-prompt bundle, `llms.txt`, and an MCP resource server are generated from the tree by `scripts/build_adapters.py`, never hand-maintained.
