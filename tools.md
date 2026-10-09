@@ -43,7 +43,7 @@ A capability is **found** when a signal matches. It is **partial** when a nearby
 
 | Capability | What it must do | Signals | Default if absent |
 |---|---|---|---|
-| Action ledger | One row per delegated action, with disposition | An events, actions, or audit table; a warehouse only if it already holds this grain | Postgres table. Schema in [value](responsibilities/value.md). Until product builds it, run one level down: [ledger](ledger.md#when-there-is-no-ledger) |
+| Action ledger | One row per delegated action, with disposition | An events, actions, or audit table; a warehouse only if it already holds this grain | Postgres table: [`templates/ledger/ledger.sql`](templates/ledger/ledger.sql), the columns in [value](responsibilities/value.md). Until product builds it, run one level down: [ledger](ledger.md#when-there-is-no-ledger) |
 | Renewal clock | A date and an owner for the commercial conversation | CRM opportunity, contract object, billing subscription | The date already in the CRM |
 | Value story | A short claim tied to specific ledger rows | A note on the opportunity, a QBR doc | A field that stores ledger ids next to the story |
 

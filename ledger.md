@@ -48,6 +48,8 @@ Write the rules down per class, and keep them stable. A proxy that changes every
 
 Level 1 is slow and it works. Pick the accounts in motion, not all of them. Twenty actions per account per week is enough to see acceptance move. Grade each one with the disposition above and one line on why. The grades are also the first eval cases, because each `edited` and `reversed` is a failure a person already explained.
 
+`scripts/cx ledger sample` makes the sheet from any CSV export, and `scripts/cx ledger report` reads it back as acceptance per class, with the sample size and the level on every number. See [`templates/ledger/`](templates/ledger/README.md), which also holds the table to hand product for level 4.
+
 The customer can help. A champion who reviews the agent's work already decides accept, edit, or undo. Asking them to say which, for a week, is a small ask and a good conversation.
 
 ## What each responsibility does without one
