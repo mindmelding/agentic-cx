@@ -34,7 +34,7 @@ Then `scripts/cx init`. It creates those files from the templates, with a `local
 | Cursor | `AGENTS.md` | "Run the setup skill." | [cursor.md](cursor.md) |
 | Gemini CLI, Copilot, Windsurf, and others | `AGENTS.md`, `GEMINI.md`, or a rules file you point at `AGENTS.md` | "Run the setup skill." | [other-hosts.md](other-hosts.md) |
 
-**3. Run setup.** It asks permission, reads past chats and connected tools, interviews you on the gaps, and leaves a gap report and a first loop. About twenty minutes. Step 7 configures the floor: who you escalate to, what the agent may spend, and your own replies as examples.
+**3. Run setup.** It asks permission, reads past chats and connected tools, interviews you on the gaps, and leaves a gap report and a first loop. About twenty minutes. To start with no questions at all, run `scripts/cx scan --repo <your product repo> --write-stack` first: setup then confirms what it found and asks only about the rest. Step 7 configures the floor: who you escalate to, what the agent may spend, and your own replies as examples.
 
 ## Connect your tools
 

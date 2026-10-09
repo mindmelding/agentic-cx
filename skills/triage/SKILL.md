@@ -5,7 +5,7 @@ description: During the day, decide pass or hold on a voice item, and no-page, p
 
 # Triage
 
-Read [`responsibilities/voice.md`](../../responsibilities/voice.md) and [`responsibilities/documentation.md`](../../responsibilities/documentation.md). Use the adapter in `stack.md` when a pass is accepted. One item at a time.
+Read [`responsibilities/voice.md`](../../responsibilities/voice.md) and [`responsibilities/documentation.md`](../../responsibilities/documentation.md). Use the adapter in `stack.md` when a pass is accepted. Where the issue's parts go in Linear, Jira, or GitHub is in [`install/trackers.md`](../../install/trackers.md). One item at a time.
 
 ## Voice
 

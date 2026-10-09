@@ -12,6 +12,7 @@
     scripts/cx spec lint               check the spec register: fields, rungs, sources that exist
     scripts/cx spec check --base main  name the specs a change touched and the doc decision each needs
 
+    scripts/cx scan --repo ../product  setup's first half: what the repo and connectors already say, no questions
     scripts/cx eval [005 ...]          the reply evals: a model drafts, the lexicon checks, a judge scores
     scripts/cx ledger sample x.csv     pick actions per account for grading by hand; `ledger report` reads them back
     scripts/cx mcp config claude       print the MCP setup for a host: claude, codex, cursor, gemini, vscode, json
@@ -1319,6 +1320,292 @@ def cmd_spec(args):
     return 1 if (blocking or errors) else 0
 
 
+# --- Scan: the first half of setup, with no questions --------------------------
+#
+# tools.md, "How a scan decides": manifests, compose, Terraform, and CI config, the
+# names of environment variables (never values, never .env itself), and docs that
+# name a vendor. Plus the spec register, and connector names when consent allows.
+# Each match is a signal for one capability. Found beats partial; nothing is absent.
+# The interview then asks only about what the scan could not see.
+
+# (section, capability, status, kind, pattern, what it means)
+# kind: dep (a package name), env (a variable name), file (a path glob), text (a
+# regex over CI, compose, and Terraform), sql (a regex over .sql files), connector
+# (a host connector name).
+SCAN_SIGNALS = [
+    ("Onboarding", "Activation events", "partial", "dep", r"^(posthog(-js|-node)?|@segment/.*|analytics-node|@amplitude/.*|amplitude|mixpanel(-browser)?|@rudderstack/.*)$", "product analytics; activation events not confirmed"),
+    ("Onboarding", "Activation events", "partial", "env", r"^(POSTHOG|SEGMENT|AMPLITUDE|MIXPANEL|RUDDERSTACK)_", "product analytics; activation events not confirmed"),
+    ("Onboarding", "Activation events", "partial", "connector", r"^(posthog|amplitude|mixpanel|segment)$", "product analytics connected; activation events not confirmed"),
+    ("Onboarding", "Stall list", "partial", "connector", r"^(hubspot|salesforce|attio)$", "a CRM, where a stall view could live"),
+    ("Context", "Memory store", "found", "connector", r"^moonbase$", "Moonbase: facts per account with an author and a source"),
+    ("Context", "Memory store", "partial", "connector", r"^(hubspot|salesforce|attio)$", "a CRM is a record, not a store the agent cites"),
+    ("Context", "Citation log", "partial", "connector", r"^moonbase$", "Moonbase can cite; confirm the agent records it"),
+    ("Context", "Correction path", "partial", "connector", r"^moonbase$", "Moonbase can be corrected; confirm the next action reads it"),
+    ("Change", "Rung store", "partial", "dep", r"^(launchdarkly.*|@launchdarkly/.*|unleash-client|@unleash/.*|flagsmith|growthbook|@growthbook/.*|statsig.*|@statsig/.*)$", "feature flags; a rung per class per account not confirmed"),
+    ("Change", "Rung store", "partial", "env", r"^(LAUNCHDARKLY|LD_SDK|UNLEASH|FLAGSMITH|GROWTHBOOK|STATSIG)_", "feature flags; a rung per class per account not confirmed"),
+    ("Change", "Practice-group list", "partial", "connector", r"^(hubspot|salesforce|attio)$", "CRM segments could name the group"),
+    ("Value", "Action ledger", "found", "sql", r"create\s+table\s+(if\s+not\s+exists\s+)?[\"`]?(\w+\.)?(action_ledger|delegated_actions|agent_actions)\b", "a table at the grain of one delegated action"),
+    ("Value", "Action ledger", "partial", "sql", r"create\s+table\s+(if\s+not\s+exists\s+)?[\"`]?(\w+\.)?(audit_log|audit_events|events|actions)\b", "an events or audit table; dispositions not confirmed"),
+    ("Value", "Renewal clock", "found", "dep", r"^(stripe|@stripe/.*|chargebee.*|recurly)$", "billing subscriptions carry the renewal date"),
+    ("Value", "Renewal clock", "found", "env", r"^(STRIPE|CHARGEBEE|RECURLY)_", "billing subscriptions carry the renewal date"),
+    ("Value", "Renewal clock", "found", "connector", r"^(hubspot|salesforce|attio|stripe)$", "the CRM or billing system holds the renewal date"),
+    ("Documentation", "Spec register", "found", "file", "specs/*.y*ml", "action-class specs"),
+    ("Documentation", "Spec register", "partial", "file", "llms.txt", "an index for language models, not a spec per class"),
+    ("Documentation", "Renderer", "found", "file", "mint.json", "Mintlify"),
+    ("Documentation", "Renderer", "found", "file", "docs.json", "Mintlify"),
+    ("Documentation", "Renderer", "found", "file", "mkdocs.yml", "MkDocs"),
+    ("Documentation", "Renderer", "found", "file", "docusaurus.config.*", "Docusaurus"),
+    ("Documentation", "Renderer", "found", "dep", r"^(@astrojs/starlight|fumadocs-core|@docusaurus/core|sphinx|mkdocs|mkdocs-material|nextra)$", "a docs renderer"),
+    ("Documentation", "Affected-path check", "found", "text", r"mindmelding/agentic-cx@|cx spec check", "the spec check runs in CI"),
+    ("Documentation", "Doc decision", "found", "text", r"mindmelding/agentic-cx@|cx spec check", "the spec check reads `doc:` lines on the pull request"),
+    ("Voice", "Intake", "found", "dep", r"^(node-zendesk|zenpy|intercom-client|python-intercom|@intercom/.*|front-sdk|helpscout.*)$", "a help desk"),
+    ("Voice", "Intake", "found", "env", r"^(ZENDESK|INTERCOM|FRONT|HELPSCOUT|PLAIN)_", "a help desk"),
+    ("Voice", "Intake", "found", "connector", r"^(zendesk|intercom|front|helpscout|plain|gmail|outlook)$", "the inbox the team answers"),
+    ("Voice", "Intake", "partial", "connector", r"^slack$", "Slack, if customers write there"),
+    ("Voice", "Issue adapter", "found", "dep", r"^(@linear/sdk|linear-sdk|jira\.js|jira|@octokit/.*|pygithub)$", "a tracker product work uses"),
+    ("Voice", "Issue adapter", "found", "env", r"^(LINEAR|JIRA)_", "a tracker product work uses"),
+    ("Voice", "Issue adapter", "found", "file", ".github/ISSUE_TEMPLATE/*", "GitHub issues"),
+    ("Voice", "Issue adapter", "found", "connector", r"^(linear|jira|atlassian|github)$", "a tracker product work uses"),
+    ("Forensics", "Trace store", "found", "dep", r"^(langfuse.*|langsmith|braintrust|arize.*|arize-phoenix|helicone.*|@helicone/.*|@opentelemetry/.*|opentelemetry-.*|traceloop.*|@traceloop/.*)$", "a trace store"),
+    ("Forensics", "Trace store", "found", "env", r"^(LANGFUSE|LANGSMITH|LANGCHAIN_TRACING|BRAINTRUST|ARIZE|PHOENIX|HELICONE|OTEL_EXPORTER|TRACELOOP)_?", "a trace store"),
+    ("Forensics", "Trace store", "partial", "dep", r"^(@sentry/.*|sentry-sdk)$", "error tracking, not a trace of why an action happened"),
+    ("Forensics", "Severity log", "found", "env", r"^(PAGERDUTY|INCIDENT_IO|OPSGENIE|ROOTLY|FIREHYDRANT)_", "an incident tool"),
+    ("Forensics", "Severity log", "found", "connector", r"^(pagerduty|incident-?io|opsgenie|rootly)$", "an incident tool"),
+]
+
+SCAN_SKIP = {".git", "node_modules", "vendor", ".venv", "venv", "dist", "build", "__pycache__", ".next", "target"}
+SCAN_ENV_FILES = (".env.example", ".env.sample", ".env.template", ".env.dist", "example.env")
+
+
+def scan_walk(repo, max_depth=4):
+    """Files under repo, skipping dependency and build folders."""
+    repo = Path(repo)
+    for root, dirs, files in os.walk(repo):
+        rel = Path(root).relative_to(repo)
+        dirs[:] = [d for d in dirs if d not in SCAN_SKIP and len(rel.parts) < max_depth]
+        for name in files:
+            yield (rel / name).as_posix() if rel.parts else name
+
+
+def read_small(path, limit=512 * 1024):
+    try:
+        if path.stat().st_size > limit:
+            return ""
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def manifest_deps(repo, files):
+    """{package name: manifest path} from the manifests a scan may read."""
+    deps = {}
+    repo = Path(repo)
+
+    def add(name, where):
+        name = name.strip().lower()
+        if name:
+            deps.setdefault(name, where)
+
+    for rel in files:
+        name = rel.rsplit("/", 1)[-1]
+        path = repo / rel
+        if name == "package.json":
+            try:
+                data = json.loads(read_small(path) or "{}")
+            except ValueError:
+                continue
+            for key in ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies"):
+                for dep in (data.get(key) or {}):
+                    add(dep, rel)
+        elif name == "pyproject.toml" and tomllib:
+            try:
+                data = tomllib.loads(read_small(path))
+            except tomllib.TOMLDecodeError:
+                continue
+            for spec in data.get("project", {}).get("dependencies", []) or []:
+                add(re.split(r"[\s<>=!~\[;(]", spec, 1)[0], rel)
+            for group in (data.get("project", {}).get("optional-dependencies", {}) or {}).values():
+                for spec in group:
+                    add(re.split(r"[\s<>=!~\[;(]", spec, 1)[0], rel)
+            for dep in (data.get("tool", {}).get("poetry", {}).get("dependencies", {}) or {}):
+                add(dep, rel)
+        elif re.fullmatch(r"requirements.*\.(txt|in)", name):
+            for line in read_small(path).splitlines():
+                line = line.split("#", 1)[0].strip()
+                if line and not line.startswith("-"):
+                    add(re.split(r"[\s<>=!~\[;(]", line, 1)[0], rel)
+        elif name == "go.mod":
+            for m in re.finditer(r"^\s*(?:require\s+)?([\w.\-]+/[\w./\-]+)\s+v", read_small(path), re.M):
+                add(m.group(1).rsplit("/", 1)[-1] if "github.com" not in m.group(1) else m.group(1).split("/")[-1], rel)
+        elif name == "Gemfile":
+            for m in re.finditer(r"^\s*gem\s+['\"]([\w\-]+)['\"]", read_small(path), re.M):
+                add(m.group(1), rel)
+        elif name == "Cargo.toml" and tomllib:
+            try:
+                data = tomllib.loads(read_small(path))
+            except tomllib.TOMLDecodeError:
+                continue
+            for dep in (data.get("dependencies", {}) or {}):
+                add(dep, rel)
+    return deps
+
+
+def env_names(repo, files):
+    """{variable name: file} from example env files. Values are never kept."""
+    names = {}
+    for rel in files:
+        if rel.rsplit("/", 1)[-1] in SCAN_ENV_FILES:
+            for line in read_small(Path(repo) / rel).splitlines():
+                m = re.match(r"^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)\s*=", line)
+                if m:
+                    names.setdefault(m.group(1), rel)
+    return names
+
+
+def config_texts(repo, files):
+    """(path, text) for CI, compose, and Terraform files."""
+    for rel in files:
+        name = rel.rsplit("/", 1)[-1]
+        if (rel.startswith(".github/workflows/") or rel.startswith(".gitlab-ci") or rel.startswith(".circleci/")
+                or re.fullmatch(r"(docker-)?compose.*\.ya?ml", name) or name.endswith(".tf")):
+            yield rel, read_small(Path(repo) / rel)
+
+
+def scan(repo=None, connectors=(), house=None):
+    """{(section, capability): {"status", "evidence": [..]}} and what was read."""
+    import fnmatch
+    found = {}
+    read = {"repo": str(repo) if repo else None, "manifests": 0, "env_files": 0, "config_files": 0, "sql_files": 0,
+            "connectors": sorted(connectors)}
+
+    def hit(section, cap, status, evidence):
+        entry = found.setdefault((section, cap), {"status": status, "evidence": []})
+        if status == "found":
+            entry["status"] = "found"
+        if evidence not in entry["evidence"]:
+            entry["evidence"].append(evidence)
+
+    files, deps, envs, configs, sqls = [], {}, {}, [], []
+    if repo:
+        repo = Path(repo)
+        if not repo.is_dir():
+            raise CxError(f"no repo at {repo}")
+        files = list(scan_walk(repo))
+        deps = manifest_deps(repo, files)
+        envs = env_names(repo, files)
+        configs = list(config_texts(repo, files))
+        sqls = [(rel, read_small(repo / rel)) for rel in files if rel.endswith(".sql")][:200]
+        read.update(manifests=len(set(deps.values())), env_files=len(set(envs.values())),
+                    config_files=len(configs), sql_files=len(sqls))
+    for section, cap, status, kind, pattern, meaning in SCAN_SIGNALS:
+        if kind == "dep":
+            for dep, where in deps.items():
+                if re.match(pattern, dep):
+                    hit(section, cap, status, f"{dep} in {where}: {meaning}")
+        elif kind == "env":
+            for name, where in envs.items():
+                if re.match(pattern, name):
+                    hit(section, cap, status, f"{name} in {where}: {meaning}")
+        elif kind == "file":
+            for rel in files:
+                if fnmatch.fnmatchcase(rel, pattern):
+                    if cap == "Spec register" and rel.startswith("specs/") and "sources:" not in read_small(repo / rel):
+                        continue
+                    hit(section, cap, status, f"{rel}: {meaning}")
+                    break
+        elif kind in ("text", "sql"):
+            for rel, text in (configs if kind == "text" else sqls):
+                if re.search(pattern, text, re.I):
+                    hit(section, cap, status, f"{rel}: {meaning}")
+        elif kind == "connector":
+            for name in connectors:
+                if re.match(pattern, name.lower()):
+                    hit(section, cap, status, f"connector `{name}`: {meaning}")
+    if house is not None and (house / "voice-queue.md").exists():
+        hit("Voice", "Triage queue", "found", "voice-queue.md in the house: the local queue")
+        hit("Voice", "Cluster", "found", "voice-queue.md in the house: one row per flaw, with a count")
+    return found, read
+
+
+def scan_stack(found, today=None):
+    """A stack.md from the template, with each scanned capability filled in."""
+    text = (STATE_TEMPLATES / "stack.md").read_text(encoding="utf-8")
+    text = text.replace("updated: YYYY-MM-DD", f"updated: {(today or datetime.date.today()).isoformat()}")
+    section = None
+    out = []
+    for line in text.splitlines():
+        m = re.match(r"^## (.+)$", line)
+        if m:
+            section = m.group(1).strip()
+        m = re.match(r"^- ([^:]+): absent, not yet assessed$", line)
+        if m and (section, m.group(1)) in found:
+            entry = found[(section, m.group(1))]
+            line = f"- {m.group(1)}: {entry['status']}, {entry['evidence'][0]} (scan)"
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
+def scan_report(found, read, today=None):
+    caps = capabilities()
+    lines = [f"# Scan, {(today or datetime.date.today()).isoformat()}", "",
+             "What `scripts/cx scan` could see without asking. Setup confirms this, then asks only about the rest.", "",
+             f"Read: {read['repo'] or 'no product repo'}; {read['manifests']} manifest(s), {read['env_files']} example env file(s) "
+             f"(names only), {read['config_files']} CI, compose, or Terraform file(s), {read['sql_files']} SQL file(s). "
+             f"Connectors: {', '.join(read['connectors']) or 'none read'}.", ""]
+    for section, names in caps.items():
+        lines += [f"## {section}", "", "| Capability | Status | Evidence |", "|---|---|---|"]
+        for name in names:
+            entry = found.get((section, name))
+            status = entry["status"] if entry else "absent"
+            evidence = "; ".join(entry["evidence"]) if entry else "nothing matched. Ask"
+            lines.append(f"| {name} | {status} | {evidence.replace('|', chr(92) + '|')} |")
+        lines.append("")
+    adapters = sorted({name.lower() for name in read["connectors"]
+                       if (ROOT / "floor" / "context" / "adapters" / f"{name.lower()}.md").exists()})
+    if adapters:
+        lines += ["## Adapters for what is connected", "",
+                  "The context contract maps onto these. Setup confirms each row the first time it reads:", ""]
+        lines += [f"- `{a}`: floor/context/adapters/{a}.md" for a in adapters] + [""]
+    unknown = [f"{s}: {n}" for s, names in caps.items() for n in names if (s, n) not in found or found[(s, n)]["status"] == "partial"]
+    lines += ["## For the interview", "", "Partial or absent, so setup asks where each lives today, who may write it, and whether to take the default in tools.md:", ""]
+    lines += [f"- {u}" for u in unknown]
+    return "\n".join(lines) + "\n"
+
+
+def cmd_scan(args):
+    house = house_dir()
+    consent = load_consent(house) or {}
+    repo = args.repo or consent.get("read", {}).get("product_repo") or None
+    if repo:
+        repo = Path(repo).expanduser().resolve()
+    connectors = []
+    if consent.get("read", {}).get("connector_config"):
+        connectors = sorted(configured_connectors(house))
+    elif not args.quiet:
+        print("cx scan: connector names not read. Set read.connector_config = true in local/consent.toml to include them.", file=sys.stderr)
+    if not repo and not connectors:
+        raise CxError("nothing to scan. Pass --repo, or set read.product_repo in local/consent.toml")
+    found, read = scan(repo, connectors, house)
+    if args.json:
+        print(json.dumps({"read": read, "capabilities": [{"section": s, "capability": c, **v} for (s, c), v in sorted(found.items())]}, indent=2))
+        return 0
+    report = house / "local" / "scan.md"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(scan_report(found, read), encoding="utf-8")
+    print(f"wrote    {report}")
+    stack = house / "stack.md"
+    if args.write_stack:
+        if stack.exists():
+            print(f"kept     {stack}: it exists. Setup merges the scan into it; nothing is overwritten.")
+        else:
+            stack.write_text(scan_stack(found), encoding="utf-8")
+            print(f"wrote    {stack} (a draft: setup confirms it)")
+    counts = {s: sum(1 for v in found.values() if v["status"] == s) for s in ("found", "partial")}
+    total = sum(len(v) for v in capabilities().values())
+    print(f"{counts['found']} found, {counts['partial']} partial, {total - counts['found'] - counts['partial']} absent, of {total}.")
+    return 0
+
+
 # --- Evals, layer 2: a model drafts, the lexicon checks, another model judges ---
 #
 # floor/evals/run.md is the procedure, and its judge prompt is read from there.
@@ -1980,6 +2267,11 @@ def main(argv=None):
             p.add_argument("--body-file", help="the pull request description, for `doc: <class> = <disposition>` lines")
             p.add_argument("--require-disposition", action="store_true", help="fail on any touched spec with no disposition, not only a moved `never`")
             p.add_argument("--format", choices=("text", "markdown", "json"), default="text")
+    sc = sub.add_parser("scan", help="the first half of setup: read the product repo and connector names, map them to tools.md")
+    sc.add_argument("--repo", help="the product repo (default: read.product_repo in local/consent.toml)")
+    sc.add_argument("--write-stack", action="store_true", help="also write a draft stack.md, if none exists")
+    sc.add_argument("--json", action="store_true")
+    sc.add_argument("--quiet", action="store_true")
     ev = sub.add_parser("eval", help="run the reply evals: a model drafts each case, the lexicon checks, a judge scores")
     ev.add_argument("cases", nargs="*", help="case ids, like 005 or 5 (default: all)")
     ev.add_argument("--drafter", help="the harness that drafts (default: CX_HARNESS, else the first on PATH)")
@@ -2003,7 +2295,7 @@ def main(argv=None):
     mcp_config_p.add_argument("host", choices=MCP_HOSTS)
     mcp_config_p.add_argument("--house", help="where the private files live (default: CX_HOUSE, else this repo)")
     args = parser.parse_args(argv)
-    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec, "status": cmd_status, "mcp": cmd_mcp, "eval": cmd_eval, "ledger": cmd_ledger}
+    commands = {"check": cmd_check, "init": cmd_init, "doctor": cmd_doctor, "models": cmd_models, "run": cmd_run, "spec": cmd_spec, "status": cmd_status, "mcp": cmd_mcp, "eval": cmd_eval, "ledger": cmd_ledger, "scan": cmd_scan}
     try:
         return commands[args.command](args)
     except CxError as e:

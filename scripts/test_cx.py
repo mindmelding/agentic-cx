@@ -754,5 +754,102 @@ class Ledger(unittest.TestCase):
             self.assertEqual(cx.main(["ledger", "sample", str(bad)]), 2)
 
 
+
+class Scan(unittest.TestCase):
+    def setUp(self):
+        self.repo = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.repo)
+        r = self.repo
+        for d in (".github/workflows", ".github/ISSUE_TEMPLATE", "specs", "db", "node_modules/x", "svc"):
+            (r / d).mkdir(parents=True)
+        (r / "package.json").write_text(json.dumps({"dependencies": {"posthog-node": "4", "langfuse": "3", "stripe": "16"},
+                                                    "devDependencies": {"@astrojs/starlight": "0.30"}}))
+        (r / "svc" / "requirements.txt").write_text("sentry-sdk==2.0  # errors\nlaunchdarkly-server-sdk>=9\n-r base.txt\n")
+        (r / ".env.example").write_text("ZENDESK_SUBDOMAIN=acme\nexport PAGERDUTY_TOKEN=very-secret\n")
+        (r / ".env").write_text("LINEAR_API_KEY=never-read\n")
+        (r / "db" / "001.sql").write_text("CREATE TABLE IF NOT EXISTS public.action_ledger (id int);\n")
+        (r / ".github" / "workflows" / "specs.yml").write_text("steps:\n  - uses: mindmelding/agentic-cx@main\n")
+        (r / ".github" / "ISSUE_TEMPLATE" / "bug.md").write_text("x")
+        shutil.copy(EXAMPLE_SPEC, r / "specs")
+        (r / "node_modules" / "x" / "package.json").write_text(json.dumps({"dependencies": {"braintrust": "1"}}))
+
+    def status(self, found, section, cap):
+        return found.get((section, cap), {}).get("status", "absent")
+
+    def test_signals_map_to_capabilities(self):
+        found, read = cx.scan(self.repo, ["moonbase", "hubspot"])
+        expect = {
+            ("Onboarding", "Activation events"): "partial",
+            ("Context", "Memory store"): "found",
+            ("Change", "Rung store"): "partial",
+            ("Value", "Action ledger"): "found",
+            ("Value", "Renewal clock"): "found",
+            ("Documentation", "Spec register"): "found",
+            ("Documentation", "Renderer"): "found",
+            ("Documentation", "Affected-path check"): "found",
+            ("Voice", "Intake"): "found",
+            ("Voice", "Issue adapter"): "found",
+            ("Forensics", "Trace store"): "found",
+            ("Forensics", "Severity log"): "found",
+            ("Documentation", "Assertion check"): "absent",
+        }
+        for (section, cap), status in expect.items():
+            self.assertEqual(self.status(found, section, cap), status, cap)
+        self.assertEqual(read["manifests"], 2)
+
+    def test_found_beats_partial(self):
+        found, _ = cx.scan(self.repo)
+        trace = found[("Forensics", "Trace store")]
+        self.assertEqual(trace["status"], "found")
+        self.assertTrue(any("sentry-sdk" in e for e in trace["evidence"]))
+
+    def test_never_reads_values_dotenv_or_dependencies(self):
+        found, _ = cx.scan(self.repo)
+        blob = json.dumps({f"{k}": v for k, v in found.items()}) + cx.scan_report(found, {"repo": "r", "manifests": 0, "env_files": 0,
+                                                                                       "config_files": 0, "sql_files": 0, "connectors": []})
+        for secret in ("very-secret", "never-read", "LINEAR_API_KEY", "braintrust"):
+            self.assertNotIn(secret, blob)
+
+    def test_report_points_at_adapters_for_connectors(self):
+        found, read = cx.scan(None, ["HubSpot", "linear", "zendesk"])
+        report = cx.scan_report(found, read)
+        self.assertIn("floor/context/adapters/hubspot.md", report)
+        self.assertIn("floor/context/adapters/zendesk.md", report)
+        self.assertNotIn("adapters/linear.md", report)
+
+    def test_a_spec_without_sources_is_not_a_register(self):
+        (self.repo / "specs" / "answer_behavior_question.yaml").write_text("class: x\n")
+        found, _ = cx.scan(self.repo)
+        self.assertEqual(self.status(found, "Documentation", "Spec register"), "absent")
+
+    def test_draft_stack_reads_clean_and_marks_the_scan(self):
+        found, _ = cx.scan(self.repo, ["moonbase"])
+        path = self.repo / "stack.md"
+        path.write_text(cx.scan_stack(found, today=THURSDAY))
+        data, problems = cx.load_stack(path)
+        self.assertEqual(problems, [])
+        memory = [r for r in data["capabilities"] if r["capability"] == "Memory store"][0]
+        self.assertEqual(memory["status"], "found")
+        self.assertTrue(memory["where"].endswith("(scan)"))
+        self.assertEqual(data["updated"], "2026-10-08")
+
+    def test_cli_never_overwrites_stack(self):
+        house = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, house)
+        cx.init_house(house)
+        (house / "stack.md").write_text("mine")
+        with mock.patch.dict(cx.os.environ, {"CX_HOUSE": str(house)}), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            self.assertEqual(cx.main(["scan", "--repo", str(self.repo), "--write-stack"]), 0)
+        self.assertEqual((house / "stack.md").read_text(), "mine")
+        self.assertIn("## For the interview", (house / "local" / "scan.md").read_text())
+
+    def test_nothing_to_scan_is_a_usage_error(self):
+        house = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, house)
+        cx.init_house(house)
+        with mock.patch.dict(cx.os.environ, {"CX_HOUSE": str(house)}), redirect_stderr(io.StringIO()):
+            self.assertEqual(cx.main(["scan"]), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
