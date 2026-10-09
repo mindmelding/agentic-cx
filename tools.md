@@ -11,6 +11,8 @@ Read the repo the skill was pointed at, after permission:
 - The names of environment variables in `.env.example` or docs (never secret values)
 - Docs, READMEs, and workflow files that name a vendor
 
+`scripts/cx scan` does this without a model: the signals it knows are listed in `SCAN_SIGNALS` in [`scripts/cx`](scripts/cx), each with what it means. It writes `local/scan.md`, and with `--write-stack` a draft `stack.md`. Add a signal there when a tool keeps showing up that it misses.
+
 A capability is **found** when a signal matches. It is **partial** when a nearby tool exists but does not cover the capability (a CRM with no ledger is partial for value). It is **absent** when nothing matches. Absent is the only case for a recommendation.
 
 ## Capabilities

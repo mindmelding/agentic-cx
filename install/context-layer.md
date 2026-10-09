@@ -28,7 +28,7 @@ Keep keys in environment variables, never in a file in this repo.
 
 ## A different CRM or context store
 
-[`floor/context/adapters/TEMPLATE.md`](../floor/context/adapters/TEMPLATE.md) maps each row of the context contract to a call in your tool, and says what the agent may write back. [`moonbase.md`](../floor/context/adapters/moonbase.md) beside it is a worked example. Write yours in `local/`, not in the repo, unless it would help other companies.
+[`floor/context/adapters/TEMPLATE.md`](../floor/context/adapters/TEMPLATE.md) maps each row of the context contract to a call in your tool, and says what the agent may write back. [`moonbase.md`](../floor/context/adapters/moonbase.md) beside it is a worked example. There are also starting points for [HubSpot](../floor/context/adapters/hubspot.md), [Salesforce](../floor/context/adapters/salesforce.md), [Zendesk](../floor/context/adapters/zendesk.md), and [Intercom](../floor/context/adapters/intercom.md). A help desk covers who they are and what is open; pair it with the CRM's adapter for the rest. For filing into Linear, Jira, or GitHub issues, see [trackers.md](trackers.md). Write yours in `local/`, not in the repo, unless it would help other companies.
 
 ## Nothing connected
 

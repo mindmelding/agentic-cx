@@ -41,7 +41,9 @@ If the host gives no access to past chats, say so in one line. Do not imply you 
 
 **Connected tools.** Read the MCP connector config for each host (`~/.claude.json`, `.mcp.json`, `~/.cursor/mcp.json`, `~/.codex/config.toml`, `~/.gemini/settings.json`), and the list of connectors the current host can see. A connector configured but not authorized is `partial`.
 
-**The product repo.** If they pointed at one, scan it the way [`../tools.md`](../tools.md#how-a-scan-decides) describes.
+**The product repo, and connector names.** Run `scripts/cx scan --write-stack` once consent has the repo path and `read.connector_config`. It reads only what [`../tools.md`](../tools.md#how-a-scan-decides) allows, maps each signal to a capability, and writes `local/scan.md` and a draft `stack.md` with each finding marked `(scan)`. It never overwrites a `stack.md` that exists. If `scripts/cx` cannot run here, scan by hand the way `tools.md` describes.
+
+Start from the scan. Look further only where it says absent or partial, and for what a manifest cannot show: a connector the host sees but no config file names, or a tool the operator mentioned in chat.
 
 Match everything to the capabilities in `tools.md`. Mark each `found`, `partial`, or `absent`. A nearby product that does not do the job is `partial`: a CRM is not an action ledger.
 
@@ -64,7 +66,7 @@ Only what nothing on disk answered. Offer a default they can accept with "yes." 
 - Which channel the team works in: Slack, email, a ticket tool.
 - Which tools are inward only: summaries, deflection, QA on the team's own queue.
 - Whether product has a tracker CX can file into, and who on product owns the line in [`../boundary.md`](../boundary.md).
-- For each `partial` or `absent` capability: where it lives today, if anywhere, who may write it, and whether they will take the default in `tools.md`.
+- For each `partial` or `absent` capability, the ones under "For the interview" in `local/scan.md`: where it lives today, if anywhere, who may write it, and whether they will take the default in `tools.md`. Ask about a `found` one only if the operator's answers contradict it.
 - Which connected tools open and close may read on a schedule, with nobody watching. Default: none. Write the names to `connectors.allowed` in `local/consent.toml`. Read access is enough.
 - What they would show their CEO to prove CX worked last quarter. The answer says which old metrics they are still reporting.
 - How the product is priced. Run the interview in [`../pricing.md`](../pricing.md#interview), one question per turn, after looking at the pricing page and any contract they share.
